@@ -13,7 +13,10 @@ Sıra önemli: **Faz 0 → 1 → 2** bir arada, sonra 3–5. Her faz tek başın
 - [x] **Faz 7.1** — tasarım dili temeli: hareket token'ları, film greni, imleci izleyen ışık, kayan araç göstergesi, sayfa geçişleri, sayaç animasyonları, süpernova, efekt sesleri, Ayarlar → hareket/ses
 - [x] **Faz 2** — çöp kutusu (30 gün, Geri al), günlük otomatik yedek (masaüstü), depolama ekranı, ders paylaşma (.mathpad)
 - [x] **Web yayını** — https://emirhanbaba31.github.io/mathpad/ (GitHub Pages, repo: Emirhanbaba31/mathpad). Güncellemek için: değişiklikleri commit'le, `git push` yeter; `sw.js` içindeki VERSION'ı artırmayı unutma.
-- [ ] Faz 4 → sıradaki (komut paleti, kırpma, çoklu seçim, şekil düzeltme)
+- [x] **v1.4–1.6** — Nova (Claude/Gemini), gökyüzü, temalar, rozetler, odak modu, Neon tasarımı astronot + gemi
+- [x] **v1.7.0** — simülasyon merkezi (Neon), devre sembolleri, şekil düzeltme, Nova koç/etiket/iğne, otomatik güncelleme (GitHub Releases), `npm test`
+- [ ] Sıradaki: cihazlar arası eşitleme (karar bekliyor), fotoğraf kırpma, Ctrl+K, akıllı tekrar, hata defteri
+- Yayın: `npm pkg set version=X` → `Kurulum-Olustur.bat` → `gh release create vX dist/MathPad-Setup-X.exe dist/MathPad-Setup-X.exe.blockmap dist/latest.yml`
 
 ## Faz 0 — Altyapı (diğer her şey buna dayanıyor)
 
