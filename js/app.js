@@ -102,9 +102,11 @@ async function newProblem() {
     <label>Ders<select class="inp" name="course">${S.courses.map(c => `<option value="${c.id}" ${c.id === def ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>
     <label>Konu<input class="inp" name="topic" list="dl-topics" placeholder="örn. Thevenin, Laplace, Türev" autocomplete="off"><datalist id="dl-topics">${topics.map(t => `<option value="${esc(t)}">`).join('')}</datalist></label>
     <label>Başlık (isteğe bağlı)<input class="inp" name="title" placeholder="örn. Örnek 3.12" autocomplete="off"></label>
-    <label class="filepick">${icon('image')}<span>Soru fotoğrafı veya PDF ekle <span class="mute">(isteğe bağlı)</span></span><input type="file" name="file" accept="image/*,application/pdf"></label>`, { ok: 'Oluştur' });
+    <label class="filepick">${icon('image')}<span>Soru fotoğrafı veya PDF ekle <span class="mute">(isteğe bağlı)</span></span><input type="file" name="file" accept="image/*,application/pdf"></label>
+    ${matchMedia('(pointer: coarse)').matches ? `<label class="filepick">${icon('image')}<span>Kamerayla çek <span class="mute">(kitaptaki soruyu fotoğrafla)</span></span><input type="file" name="cam" accept="image/*" capture="environment"></label>` : ''}`, { ok: 'Oluştur' });
   if (!r) return;
-  createProblem(r.course, r, r.file?.size ? [r.file] : null);
+  const f = r.cam?.size ? r.cam : r.file;
+  createProblem(r.course, r, f?.size ? [f] : null);
 }
 
 async function addCourse() {
@@ -683,26 +685,30 @@ async function problem(id) {
       <div class="pb-title"><input class="title-in" value="${esc(p.title)}" aria-label="Soru başlığı" maxlength="120"><button class="crumb" data-meta>${glyph(c)}${esc(c?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}</button></div>
       <span class="pb-time mono" title="Bu soruya harcanan süre (5 dk hareketsizlikte durur)">${icon('clock')}<span data-t>${dur(p.secs)}</span></span>
       <div class="seg status" data-status>${Object.entries(STATUS).map(([k, l]) => `<button data-s="${k}" class="${p.status === k ? 'on' : ''} s-${k}">${k === 'solved' ? icon('check') : k === 'review' ? icon('review') : icon('pen')}<span>${l}</span></button>`).join('')}</div>
-      <button class="icon-btn" data-export title="PDF / PNG olarak kaydet">${icon('download')}</button>
-      <button class="icon-btn" data-side title="Hesap makinesi & formüller">${icon('calc')}</button>
-      <button class="icon-btn" data-focus title="Odak modu (F)" aria-label="Odak modu">${icon('star')}</button>
-      <button class="icon-btn" data-del title="Soruyu sil">${icon('trash')}</button>
+      <button class="icon-btn pb-more" data-more aria-label="Diğer işlemler" aria-expanded="false">${icon('dots')}</button>
+      <div class="pb-acts">
+        <button class="icon-btn" data-export title="PDF / PNG olarak kaydet">${icon('download')}<span>PDF / PNG kaydet</span></button>
+        <button class="icon-btn" data-side title="Hesap makinesi & formüller">${icon('calc')}<span>Hesap ve formüller</span></button>
+        <button class="icon-btn" data-focus title="Odak modu (F)" aria-label="Odak modu">${icon('star')}<span>Odak modu</span></button>
+        <button class="icon-btn" data-del title="Soruyu sil">${icon('trash')}<span>Soruyu sil</span></button>
+      </div>
     </header>
     <div class="pb-main">
       <div class="board-wrap">
         <canvas class="board" aria-label="Çizim tahtası"></canvas>
         <div class="pins" aria-label="Nova notları"></div>
+        <div class="quick"><button class="tb" data-undo aria-label="Geri al">${icon('undo')}</button><button class="tb" data-redo aria-label="Yinele">${icon('redo')}</button></div>
         <div class="board-empty" hidden>${icon('pen')}<p>Kalemle ya da fareyle yazmaya başla</p><p class="mute small">Soru resmini <b>yapıştır (Ctrl+V)</b>, buraya <b>sürükle</b> ya da ${icon('image')} ile ekle · iki parmakla kaydır/yakınlaştır</p></div>
         <div class="toolbar" role="toolbar">
-          ${tools.map(([k, ic, l]) => k === '|' ? '<span class="sep"></span>' : `<button class="tb" data-tool="${k}" title="${l}" aria-label="${l}">${icon(ic)}</button>`).join('')}
+          ${tools.map(([k, ic, l]) => k === '|' ? '<button class="tb tb-style" data-style aria-label="Renk ve kalınlık" aria-expanded="false"><i></i></button><span class="sep"></span>' : `<button class="tb" data-tool="${k}" title="${l}" aria-label="${l}">${icon(ic)}</button>`).join('')}
           <button class="tb" data-img title="Resim / PDF ekle" aria-label="Resim veya PDF ekle">${icon('image')}</button>
           <button class="tb" data-symbols title="Devre sembolleri" aria-label="Devre sembolleri" aria-expanded="false">${icon('resistor')}</button>
           <button class="tb tb-toggle ${pref('snap') === '0' ? '' : 'on-soft'}" data-snap title="Şekil düzeltme: çizgiyi bitirince kalemi bir an beklet" aria-label="Şekil düzeltme" aria-pressed="${pref('snap') !== '0'}">${icon('sparkle')}</button>
-          <span class="sep"></span>
+          <span class="tb-styles"><span class="sep"></span>
           ${COLORS.map((col, i) => `<button class="sw ${i ? '' : 'on'}" data-color="${col}" style="--c:${col}" aria-label="Renk ${i + 1}"></button>`).join('')}
           <span class="sep"></span>
           ${[2, 3, 6].map(w => `<button class="tb wd ${w === 3 ? 'on' : ''}" data-w="${w}" title="Kalınlık" aria-label="Kalınlık ${w}"><i style="width:${w + 3}px;height:${w + 3}px"></i></button>`).join('')}
-          <span class="sep"></span>
+          </span><span class="sep"></span>
           <button class="tb" data-undo title="Geri al (Ctrl+Z)" aria-label="Geri al">${icon('undo')}</button>
           <button class="tb" data-redo title="Yinele (Ctrl+Y)" aria-label="Yinele">${icon('redo')}</button>
           <button class="tb" data-fit title="Hepsini göster" aria-label="Hepsini göster">${icon('fit')}</button>
@@ -736,7 +742,21 @@ async function problem(id) {
     onTool: t => { $$('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); fx.slideIndicator($('.toolbar'), $(`[data-tool="${t}"]`)); },
     onSelect: el => { $('[data-delsel]').disabled = !el; $('[data-rot]').disabled = el?.type !== 'sym'; },
     onSnap: type => toast(`Şekil düzeltildi: ${SHAPE_NAMES[type] || type} ✦`),
+    onTap: n => { navigator.vibrate?.(12); toast(n === 2 ? 'Geri alındı' : 'Yinelendi'); },
   });
+  // undo/redo live both in the toolbar and in the floating phone pair
+  $$('[data-undo]').forEach(b => b.onclick = e => { e.stopPropagation(); board.undo(); });
+  $$('[data-redo]').forEach(b => b.onclick = e => { e.stopPropagation(); board.redo(); });
+  // phone header: the dots button opens the less used actions
+  const top = $('.pb-top'), more = $('[data-more]');
+  const moreOpen = on => { top.classList.toggle('more-open', on); more.setAttribute('aria-expanded', on); };
+  more.onclick = e => { e.stopPropagation(); moreOpen(!top.classList.contains('more-open')); };
+  $('.pb-acts').addEventListener('click', () => moreOpen(false));
+  $('.pb').addEventListener('pointerdown', e => { if (!e.target.closest('.pb-acts, [data-more]')) moreOpen(false); });
+  // tablets/phones: keep the screen on while working on a problem
+  let wake = null;
+  const keepAwake = () => { if (document.visibilityState === 'visible' && matchMedia('(pointer: coarse)').matches) navigator.wakeLock?.request('screen').then(w => wake = w).catch(() => { }); };
+  keepAwake(); document.addEventListener('visibilitychange', keepAwake);
   emptyHint.hidden = els.length > 0;
   board.setTool(pref('tool') || 'pen');
   board.setSnap(pref('snap') !== '0');
@@ -780,13 +800,15 @@ async function problem(id) {
   renderPins();
 
   // toolbar
-  $('.toolbar').onclick = e => {
+  const tbar = $('.toolbar');
+  const styling = on => { tbar.classList.toggle('styling', on); $('[data-style]').setAttribute('aria-expanded', on); if (!on) fx.slideIndicator(tbar, $('[data-tool].on')); };
+  tbar.onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.tool) { board.setTool(b.dataset.tool); pref('tool', b.dataset.tool); }
+    if (tbar.classList.contains('styling') && (b.dataset.color || b.dataset.w)) setTimeout(() => styling(false), 180); // phone: back to the tools after a pick
+    if ('style' in b.dataset) styling(!tbar.classList.contains('styling'));
+    else if (b.dataset.tool) { board.setTool(b.dataset.tool); pref('tool', b.dataset.tool); }
     else if (b.dataset.color) { board.setColor(b.dataset.color); wrap.style.setProperty('--pen', b.dataset.color); $$('.sw').forEach(s => s.classList.toggle('on', s === b)); if (['eraser', 'select'].includes(board.tool)) board.setTool('pen'); }
     else if (b.dataset.w) { board.setWidth(+b.dataset.w); $$('.wd').forEach(s => s.classList.toggle('on', s === b)); }
-    else if ('undo' in b.dataset) board.undo();
-    else if ('redo' in b.dataset) board.redo();
     else if ('fit' in b.dataset) board.fit();
     else if ('delsel' in b.dataset) board.deleteSel();
     else if ('img' in b.dataset) $('[data-file]').click();
@@ -918,7 +940,7 @@ async function problem(id) {
   return () => {
     clearInterval(iv); board.destroy(); persist(); stopTutor?.(); stopRoam();
     removeEventListener('keydown', focusKey); document.body.classList.remove('focus'); fx.ambience(false);
-    document.removeEventListener('paste', onPaste);
+    document.removeEventListener('paste', onPaste); document.removeEventListener('visibilitychange', keepAwake); wake?.release().catch(() => { });
     view.removeEventListener('pointerdown', act); removeEventListener('keydown', act);
     if (saveT) save();
   };

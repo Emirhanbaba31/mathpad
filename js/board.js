@@ -179,13 +179,14 @@ export async function renderTo(els, { width = 1240, box, bg = '#fff', map = PRIN
   return cv;
 }
 
-export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap }) {
+export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap, onTap }) {
   const ctx = cv.getContext('2d');
   const base = document.createElement('canvas'), bctx = base.getContext('2d');
   const B = { els: initial, tool: 'pen', color: COLORS[0], width: 3, sel: null, snap: true };
   const view = { x: 0, y: 0, z: 1 };
   let undoS = [], redoS = [], penSeen = false, draft = null, gesture = null, dirty = true, raf = 0, dpr = 1, spaceDown = false, textBox = null;
   const ptrs = new Map();
+  let tap = null; // quick multi-finger tap: 2 fingers = undo, 3 = redo
 
   const schedule = full => { if (full) dirty = true; raf ||= requestAnimationFrame(frame); };
   const reload = () => schedule(true);
@@ -254,6 +255,10 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap })
     try { cv.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointer */ }
     if (e.pointerType === 'pen') penSeen = true;
     ptrs.set(e.pointerId, local(e));
+    if (e.pointerType === 'touch') {
+      if (ptrs.size === 1) tap = { t: performance.now(), n: 1, at: new Map() };
+      if (tap) { tap.n = Math.max(tap.n, ptrs.size); tap.at.set(e.pointerId, local(e)); }
+    }
     if (ptrs.size === 2) {
       draft = null;
       const [p, q] = [...ptrs.values()];
@@ -263,8 +268,9 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap })
     if (ptrs.size > 2) return;
     const [sx, sy] = local(e), [x, y] = toWorld(e);
     if (e.button === 1 || spaceDown || (e.pointerType === 'touch' && penSeen)) { gesture = { type: 'pan', s: [sx, sy], v: { ...view } }; return; }
-    if (e.button === 2) return;
-    const t = B.tool;
+    const penErase = e.pointerType === 'pen' && (e.buttons & 34); // stylus side button or eraser end
+    if (e.button === 2 && !penErase) return;
+    const t = penErase ? 'eraser' : B.tool;
     if (t === 'pen' || t === 'hl') { draft = { type: 'stroke', color: B.color, w: t === 'hl' ? B.width * 6 : B.width, pts: [x, y, pressure(e)], ...(t === 'hl' && { hl: 1 }) }; gesture = { type: 'draw' }; }
     else if (t === 'eraser') { gesture = { type: 'erase' }; eraseAt(x, y); }
     else if (['line', 'arrow', 'rect', 'ellipse'].includes(t)) { draft = { type: t, color: B.color, w: B.width, x1: x, y1: y, x2: x, y2: y }; gesture = { type: 'draw' }; }
@@ -284,6 +290,8 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap })
   function moveEv(e) {
     if (!ptrs.has(e.pointerId)) return;
     ptrs.set(e.pointerId, local(e));
+    const s0 = tap?.at.get(e.pointerId), l = ptrs.get(e.pointerId);
+    if (s0 && Math.hypot(l[0] - s0[0], l[1] - s0[1]) > 12) tap = null; // fingers moved: a pinch/pan, not a tap
     if (!gesture) return;
     if (gesture.type === 'pinch') {
       if (ptrs.size < 2) return;
@@ -337,6 +345,14 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap })
   function up(e) {
     clearTimeout(snapT);
     ptrs.delete(e.pointerId);
+    if (tap && !ptrs.size) {
+      const t = tap; tap = null;
+      if (t.n >= 2 && performance.now() - t.t < 350) {
+        if (gesture?.type === 'pinch') Object.assign(view, gesture.v); // undo the tiny zoom the tap caused
+        gesture = null; draft = null;
+        t.n === 2 ? api.undo() : api.redo(); onTap?.(t.n); return;
+      }
+    }
     if (gesture?.type === 'pinch') { if (!ptrs.size) gesture = null; return; }
     if (draft) {
       const d = draft; draft = null;

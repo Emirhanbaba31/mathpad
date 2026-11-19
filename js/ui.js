@@ -26,14 +26,18 @@ export function modal(title, body, { ok = 'Kaydet', cancel = 'Vazgeç', danger =
   d.showModal();
   (d.querySelector('input:not([type=file])') || d.querySelector('select,textarea'))?.focus();
   const form = d.querySelector('form');
+  history.pushState({ dlg: 1 }, ''); // phone/browser back button closes the dialog instead of leaving the page
   return new Promise(res => {
     let done = false;
-    const finish = ok => { if (!done) { done = true; res(ok ? Object.fromEntries(new FormData(form)) : null); } };
+    // drop our history entry before the caller continues, so its own navigation isn't undone by a late back()
+    const unwind = () => new Promise(r => { if (!history.state?.dlg) return r(); addEventListener('popstate', () => r(), { once: true }); history.back(); });
+    const finish = ok => { if (done) return; done = true; const v = ok ? Object.fromEntries(new FormData(form)) : null; unwind().then(() => res(v)); };
     form.addEventListener('submit', e => finish(e.submitter?.value === 'ok')); // sync; 'close' can be delayed in background windows
     d.onclose = () => finish(d.returnValue === 'ok');
   });
 }
-export const confirmBox = (title, text, ok = 'Sil') => modal(title, `<p class="mute">${esc(text)}</p>`, { ok, danger: true }).then(Boolean);
+addEventListener('popstate', () => { const d = $('#dlg'); if (d?.open) d.close(); });
+export const confirmBox =(title, text, ok = 'Sil') => modal(title, `<p class="mute">${esc(text)}</p>`, { ok, danger: true }).then(Boolean);
 
 export function download(name, blobOrUrl) {
   // Android app: WebViews ignore <a download>, so save to the cache and open the system share sheet

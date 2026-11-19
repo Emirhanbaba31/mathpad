@@ -1,6 +1,6 @@
 ﻿// Offline cache for the web/PWA version (the desktop app serves files locally and does not use this).
 // Bump VERSION when app files change so installed copies update.
-const VERSION = 'mathpad-v15';
+const VERSION = 'mathpad-v16';
 const CORE = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest',
   'js/app.js', 'js/db.js', 'js/ui.js', 'js/board.js', 'js/tools.js', 'js/fx.js', 'js/astro.js', 'js/sky.js', 'js/badges.js', 'js/shapes.js', 'js/symbols.js', 'js/sync.js', 'js/update.js', 'js/merge.js', 'js/sim.js', 'js/simcore.js', 'css/sim.css', 'vendor/anthropic.mjs',
