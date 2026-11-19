@@ -14,6 +14,7 @@ import * as upd from './update.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
+const phoneQ = matchMedia('(max-width: 820px)');
 let cleanup = null, installEvt = null, pendingFiles = null, update = null; // update: { state: 'downloading'|'ready', version } from the desktop shell
 
 // ---------- helpers ----------
@@ -295,20 +296,22 @@ function pomoUI() {
 // ---------- navigation ----------
 function nav() {
   const [a, b] = route_(), here = a || '';
-  const link = (href, ic, label, active, extra = '') => `<a href="${href}" class="nav-link ${active ? 'on' : ''}">${icon(ic)}<span>${label}</span>${extra}</a>`;
+  const link = (href, ic, label, active, extra = '', cls = '') =>
+    `<a href="${href}" class="nav-link ${active ? 'on' : ''} ${cls}" title="${label}"${active ? ' aria-current="page"' : ''}>${icon(ic)}<span>${label}</span>${extra}</a>`;
   const rev = S.problems.filter(p => p.status === 'review').length;
   // brand is rendered once so its looping animation never restarts on navigation
   if (!$('#nav-body')) $('#nav').innerHTML = `<a href="#/" class="brand" aria-label="MathPad ana sayfa">${logo()}<span>MATH<b>PAD</b></span></a><div id="nav-body" class="nav-body"></div>`;
   $('#nav-body').innerHTML = `
     <button class="btn primary new-btn" data-act="new">${icon('plus')} Yeni soru</button>
     ${link('#/', 'home', 'Panel', here === '')}
-    ${link('#/courses', 'book', 'Dersler', here === 'courses')}
+    ${link('#/courses', 'book', 'Dersler', here === 'courses', '', here === 'c' ? 'on-mob' : '')}
     <div class="nav-courses">${S.courses.map(c => {
       const n = S.problems.filter(p => p.course === c.id).length;
       const on = (here === 'c' && b === c.id) || (here === 'p' && S.problems.find(p => p.id === b)?.course === c.id);
       return `<a href="#/c/${c.id}" class="nav-sub ${on ? 'on' : ''}"><span>${glyph(c)}${esc(c.name)}</span><i>${n || ''}</i></a>`;
     }).join('')}<button class="nav-sub add" data-act="add-course">${icon('plus')} Ders ekle</button></div>
     ${link('#/review', 'review', 'Tekrar', here === 'review', rev ? `<i class="count">${rev}</i>` : '')}
+    <button type="button" class="dock-new" data-act="new" aria-label="Yeni soru">${icon('plus')}</button>
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
     ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
@@ -684,7 +687,7 @@ async function problem(id) {
       <a class="icon-btn" href="#/c/${p.course}" aria-label="Derse dön">${icon('back')}</a>
       <div class="pb-title"><input class="title-in" value="${esc(p.title)}" aria-label="Soru başlığı" maxlength="120"><button class="crumb" data-meta>${glyph(c)}${esc(c?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}</button></div>
       <span class="pb-time mono" title="Bu soruya harcanan süre (5 dk hareketsizlikte durur)">${icon('clock')}<span data-t>${dur(p.secs)}</span></span>
-      <div class="seg status" data-status>${Object.entries(STATUS).map(([k, l]) => `<button data-s="${k}" class="${p.status === k ? 'on' : ''} s-${k}">${k === 'solved' ? icon('check') : k === 'review' ? icon('review') : icon('pen')}<span>${l}</span></button>`).join('')}</div>
+      <div class="seg status" data-status>${Object.entries(STATUS).map(([k, l]) => `<button data-s="${k}" class="${p.status === k ? 'on' : ''} s-${k}" aria-label="${l}" aria-pressed="${p.status === k}">${k === 'solved' ? icon('check') : k === 'review' ? icon('review') : icon('pen')}<span>${l}</span></button>`).join('')}</div>
       <button class="icon-btn pb-more" data-more aria-label="Diğer işlemler" aria-expanded="false">${icon('dots')}</button>
       <div class="pb-acts">
         <button class="icon-btn" data-export title="PDF / PNG olarak kaydet">${icon('download')}<span>PDF / PNG kaydet</span></button>
@@ -748,8 +751,107 @@ async function problem(id) {
   $$('[data-undo]').forEach(b => b.onclick = e => { e.stopPropagation(); board.undo(); });
   $$('[data-redo]').forEach(b => b.onclick = e => { e.stopPropagation(); board.redo(); });
   // phone header: the dots button opens the less used actions
-  const top = $('.pb-top'), more = $('[data-more]');
-  const moreOpen = on => { top.classList.toggle('more-open', on); more.setAttribute('aria-expanded', on); };
+  const top = $('.pb-top'), more = $('[data-more]'), side = $('.pb-side'), symPop = $('.sym-pop'), title = $('.title-in'), cv = $('canvas.board'), tbar = $('.toolbar');
+  // phone immersive drawing: fade/slide board chrome away during single-pointer pen/finger drawing strokes
+  const DRAW_TOOLS = new Set(['pen', 'hl', 'eraser', 'line', 'arrow', 'rect', 'ellipse']);
+  const activePtrs = new Map();
+  let multiTouch = false, penSeen = false, hideDelay = 0, revealTimer = 0, edgeTap = null;
+  const isImmersive = () => document.body.classList.contains('board-immersive');
+  const chromeBlocked = () =>
+    !phoneQ.matches ||
+    !!document.querySelector('dialog[open]') ||
+    !!wrap.querySelector('.board-text') ||
+    !symPop.hidden ||
+    !side.hidden ||
+    top.classList.contains('more-open') ||
+    document.activeElement === title;
+  const showChrome = () => {
+    clearTimeout(hideDelay); hideDelay = 0;
+    clearTimeout(revealTimer); revealTimer = 0;
+    document.body.classList.remove('board-immersive');
+  };
+  const hideChrome = () => {
+    clearTimeout(revealTimer); revealTimer = 0;
+    if (chromeBlocked() || multiTouch || activePtrs.size !== 1) return;
+    document.body.classList.add('board-immersive');
+  };
+  const inEdgeZone = clientY => {
+    const r = wrap.getBoundingClientRect(), ry = clientY - r.top;
+    const topZone = Math.max(60, top.offsetHeight + 12);
+    const botZone = Math.max(84, (parseFloat(getComputedStyle(tbar).bottom) || 12) + tbar.offsetHeight + 16);
+    return ry <= topZone || ry >= r.height - botZone;
+  };
+  const onBoardDown = e => {
+    if (!phoneQ.matches) return;
+    activePtrs.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now(), type: e.pointerType });
+    if (e.pointerType === 'pen') penSeen = true;
+    // Never hide chrome during two-finger pinch/pan
+    if (activePtrs.size >= 2) {
+      multiTouch = true;
+      edgeTap = null;
+      showChrome();
+      return;
+    }
+    // Track a tap near the top or bottom edge while chrome is hidden for instant reveal
+    if (isImmersive() && inEdgeZone(e.clientY)) {
+      edgeTap = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+    } else {
+      edgeTap = null;
+    }
+    if (e.pointerType !== 'pen' && e.pointerType !== 'touch') return;
+    if (chromeBlocked()) { showChrome(); return; }
+    // Once a stylus is used, single-finger touch pans instead of drawing
+    if (penSeen && e.pointerType === 'touch') return;
+    const isDrawing = DRAW_TOOLS.has(board.tool) || (e.pointerType === 'pen' && !!(e.buttons & 34));
+    if (!isDrawing) return;
+    clearTimeout(revealTimer); revealTimer = 0;
+    if (isImmersive()) return;
+    if (e.pointerType === 'pen') hideChrome();
+    else {
+      clearTimeout(hideDelay);
+      hideDelay = setTimeout(() => { hideDelay = 0; hideChrome(); }, 90);
+    }
+  };
+  const onBoardMove = e => {
+    const p0 = activePtrs.get(e.pointerId);
+    if (!p0) return;
+    const dist = Math.hypot(e.clientX - p0.x, e.clientY - p0.y);
+    if (edgeTap && edgeTap.id === e.pointerId && dist > 14) edgeTap = null;
+    if (hideDelay && activePtrs.size === 1 && !multiTouch && dist > 8) {
+      clearTimeout(hideDelay); hideDelay = 0;
+      hideChrome();
+    }
+  };
+  const onBoardUp = e => {
+    activePtrs.delete(e.pointerId);
+    if (edgeTap && edgeTap.id === e.pointerId) {
+      const tap = edgeTap; edgeTap = null;
+      if (performance.now() - tap.t < 400 && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) <= 14) {
+        showChrome();
+        if (!activePtrs.size) multiTouch = false;
+        return;
+      }
+    }
+    if (!activePtrs.size) {
+      clearTimeout(hideDelay); hideDelay = 0;
+      multiTouch = false;
+      if (e.type === 'pointercancel') { showChrome(); return; }
+      if (isImmersive()) {
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(showChrome, 700);
+      }
+    }
+  };
+  const onBoardFocusIn = e => {
+    if (e.target.closest?.('.pb-top, .quick, .toolbar, .pb-side, .sym-pop, .board-text, dialog')) showChrome();
+  };
+  cv.addEventListener('pointerdown', onBoardDown, { passive: true });
+  cv.addEventListener('pointermove', onBoardMove, { passive: true });
+  cv.addEventListener('pointerup', onBoardUp, { passive: true });
+  cv.addEventListener('pointercancel', onBoardUp, { passive: true });
+  document.addEventListener('focusin', onBoardFocusIn);
+
+  const moreOpen = on => { top.classList.toggle('more-open', on); more.setAttribute('aria-expanded', on); if (on) showChrome(); };
   more.onclick = e => { e.stopPropagation(); moreOpen(!top.classList.contains('more-open')); };
   $('.pb-acts').addEventListener('click', () => moreOpen(false));
   $('.pb').addEventListener('pointerdown', e => { if (!e.target.closest('.pb-acts, [data-more]')) moreOpen(false); });
@@ -800,7 +902,6 @@ async function problem(id) {
   renderPins();
 
   // toolbar
-  const tbar = $('.toolbar');
   const styling = on => { tbar.classList.toggle('styling', on); $('[data-style]').setAttribute('aria-expanded', on); if (!on) fx.slideIndicator(tbar, $('[data-tool].on')); };
   tbar.onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -813,7 +914,7 @@ async function problem(id) {
     else if ('delsel' in b.dataset) board.deleteSel();
     else if ('img' in b.dataset) $('[data-file]').click();
     else if ('rot' in b.dataset) board.rotateSel();
-    else if ('symbols' in b.dataset) { const pop = $('.sym-pop'); pop.hidden = !pop.hidden; b.setAttribute('aria-expanded', !pop.hidden); }
+    else if ('symbols' in b.dataset) { const pop = $('.sym-pop'); pop.hidden = !pop.hidden; b.setAttribute('aria-expanded', !pop.hidden); if (!pop.hidden) showChrome(); }
     else if ('snap' in b.dataset) { const on = !b.classList.contains('on-soft'); board.setSnap(on); pref('snap', on ? '1' : '0'); b.classList.toggle('on-soft', on); b.setAttribute('aria-pressed', on); toast(on ? 'Şekil düzeltme açık: çizimi bitirince kalemi bir an beklet' : 'Şekil düzeltme kapalı'); }
   };
   $('[data-file]').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
@@ -828,14 +929,13 @@ async function problem(id) {
   wrap.ondrop = e => { e.preventDefault(); wrap.classList.remove('dragging'); addFiles([...e.dataTransfer.files]); };
 
   // header
-  const title = $('.title-in');
   title.onchange = () => { p.title = title.value.trim() || p.title; title.value = p.title; p.updated = Date.now(); persist(); };
   title.onkeydown = e => e.key === 'Enter' && title.blur();
   $('[data-status]').onclick = e => {
     const b = e.target.closest('[data-s]'); if (!b) return;
     const s = b.dataset.s, was = p.status;
     p.status = s; p.solvedAt = s === 'solved' ? (was === 'solved' ? p.solvedAt : Date.now()) : null; p.updated = Date.now();
-    persist(); $$('[data-s]').forEach(x => x.classList.toggle('on', x === b));
+    persist(); $$('[data-s]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
     if (s === 'solved' && was !== 'solved') celebrate();
     if (s === 'review' && was !== 'review') toast('Tekrar listesine eklendi');
     nav();
@@ -878,11 +978,10 @@ async function problem(id) {
   };
 
   // side panel (calculator + formulas)
-  const side = $('.pb-side');
   let calcMounted = false;
   const mountSide = () => { if (!calcMounted && !side.hidden) { T.mountCalc($('[data-pane=calc]')); $('[data-pane=fx]').innerHTML = T.renderNote(S.notes[p.course]); calcMounted = true; } };
   mountSide();
-  $('[data-side]').onclick = () => { side.hidden = !side.hidden; pref('side', side.hidden ? '0' : '1'); mountSide(); };
+  $('[data-side]').onclick = () => { side.hidden = !side.hidden; pref('side', side.hidden ? '0' : '1'); mountSide(); if (!side.hidden) { showChrome(); refreshFades(side, true); } };
   $('[data-close-side]').onclick = () => { side.hidden = true; pref('side', '0'); };
   let stopTutor = null;
   const tab = t => {
@@ -900,7 +999,7 @@ async function problem(id) {
     });
   };
   side.querySelector('.seg').onclick = e => { const t = e.target.closest('[data-tab]')?.dataset.tab; if (t) tab(t); };
-  const openNova = () => { side.hidden = false; mountSide(); tab('nova'); $('[data-pane=nova] textarea')?.focus(); };
+  const openNova = () => { side.hidden = false; showChrome(); mountSide(); tab('nova'); refreshFades(side, true); $('[data-pane=nova] textarea')?.focus(); };
   const stopRoam = mountRoamer(wrap, openNova); // Nova floats on a tether from her ship across the top of the board
 
   // focus mode: everything but the board slips away; hyperspace jump in and out
@@ -939,12 +1038,138 @@ async function problem(id) {
 
   return () => {
     clearInterval(iv); board.destroy(); persist(); stopTutor?.(); stopRoam();
+    showChrome();
+    cv.removeEventListener('pointerdown', onBoardDown); cv.removeEventListener('pointermove', onBoardMove);
+    cv.removeEventListener('pointerup', onBoardUp); cv.removeEventListener('pointercancel', onBoardUp);
+    document.removeEventListener('focusin', onBoardFocusIn);
     removeEventListener('keydown', focusKey); document.body.classList.remove('focus'); fx.ambience(false);
     document.removeEventListener('paste', onPaste); document.removeEventListener('visibilitychange', keepAwake); wake?.release().catch(() => { });
     view.removeEventListener('pointerdown', act); removeEventListener('keydown', act);
     if (saveT) save();
   };
 }
+
+// ---------- phone scroll-aware chrome & horizontal tab fades ----------
+const slimBar = document.createElement('div');
+slimBar.id = 'slim-bar';
+slimBar.className = 'slim-bar';
+slimBar.setAttribute('aria-hidden', 'true');
+slimBar.innerHTML = `<button type="button" class="slim-btn" tabindex="-1" aria-label="Yukarı çık"><i class="slim-dot" aria-hidden="true"></i><span class="slim-title"></span><span class="slim-up" aria-hidden="true">↑</span></button>`;
+document.body.append(slimBar);
+const slimBtn = $('.slim-btn', slimBar), slimTitle = $('.slim-title', slimBar);
+
+let scrollRaf = 0, lastScrollY = 0, scrollDirAcc = 0, scrollLastDir = 0;
+function setSlim(on) {
+  const was = document.body.classList.contains('head-slim');
+  if (was === on) return;
+  document.body.classList.toggle('head-slim', on);
+  slimBar.setAttribute('aria-hidden', String(!on));
+  slimBtn.tabIndex = on ? 0 : -1;
+}
+function setNavHidden(on) {
+  document.body.classList.toggle('nav-hidden', on);
+}
+function resetScrollChrome() {
+  lastScrollY = 0; scrollDirAcc = 0; scrollLastDir = 0;
+  setSlim(false);
+  setNavHidden(false);
+  document.body.classList.remove('board-immersive');
+}
+function syncSlimBar() {
+  const isBoard = document.body.dataset.page === 'p';
+  const h1 = !isBoard && $('.page-h h1', view);
+  if (!h1) {
+    slimTitle.innerHTML = '';
+    slimBtn.setAttribute('aria-label', 'Yukarı çık');
+    setSlim(false);
+    return;
+  }
+  slimTitle.innerHTML = h1.innerHTML;
+  const txt = h1.textContent.trim();
+  slimBtn.setAttribute('aria-label', txt ? `${txt} — yukarı çık` : 'Yukarı çık');
+}
+slimBtn.onclick = () => {
+  setNavHidden(false);
+  view.scrollTo({ top: 0, behavior: fx.full() ? 'smooth' : 'auto' });
+};
+function handleViewScroll() {
+  scrollRaf = 0;
+  if (!phoneQ.matches || document.body.dataset.page === 'p') return;
+  const maxY = Math.max(0, view.scrollHeight - view.clientHeight);
+  if (maxY < 48) { setSlim(false); setNavHidden(false); lastScrollY = 0; scrollDirAcc = 0; return; }
+  const y = Math.max(0, Math.min(view.scrollTop, maxY));
+  const dy = y - lastScrollY;
+  lastScrollY = y;
+
+  const ph = $('.page-h', view);
+  const collapseAt = ph ? Math.max(40, Math.min(96, ph.offsetTop + ph.offsetHeight * 0.72)) : 56;
+  const slimOn = document.body.classList.contains('head-slim');
+  if (!slimOn && y > collapseAt + 6) setSlim(true);
+  else if (slimOn && y < Math.max(16, collapseAt - 12)) setSlim(false);
+
+  if (y <= 24) {
+    scrollDirAcc = 0; scrollLastDir = 0;
+    setNavHidden(false);
+    return;
+  }
+  if (!dy) return;
+  const dir = dy > 0 ? 1 : -1;
+  if (dir !== scrollLastDir) { scrollLastDir = dir; scrollDirAcc = dy; }
+  else scrollDirAcc += dy;
+
+  if (dir === 1 && scrollDirAcc > 16 && y > 48) { setNavHidden(true); scrollDirAcc = 0; }
+  else if (dir === -1 && scrollDirAcc < -12) { setNavHidden(false); scrollDirAcc = 0; }
+}
+view.addEventListener('scroll', () => {
+  if (!scrollRaf) scrollRaf = requestAnimationFrame(handleViewScroll);
+}, { passive: true });
+// Keyboard focus must always reveal hidden scroll chrome
+$('#nav').addEventListener('focusin', () => setNavHidden(false));
+view.addEventListener('focusin', e => {
+  if (e.target.closest?.('.page-h')) { setSlim(false); setNavHidden(false); }
+});
+
+// Soft edge fades + active-tab centering for horizontally scrollable tabs & segmented rows
+const TAB_SEL = '.tabs, .seg:not(.status)';
+function updateFade(el) {
+  if (!phoneQ.matches) { el.classList.remove('can-left', 'can-right'); return; }
+  const max = el.scrollWidth - el.clientWidth;
+  if (max <= 4) { el.classList.remove('can-left', 'can-right'); return; }
+  el.classList.toggle('can-left', el.scrollLeft > 4);
+  el.classList.toggle('can-right', el.scrollLeft < max - 4);
+}
+function refreshFades(root = view, centerActive = false) {
+  $$(TAB_SEL, root).forEach(el => {
+    if (centerActive && phoneQ.matches && el.scrollWidth > el.clientWidth + 4) {
+      const on = el.querySelector('.on');
+      if (on) {
+        const er = el.getBoundingClientRect(), ar = on.getBoundingClientRect();
+        el.scrollLeft = Math.max(0, el.scrollLeft + (ar.left - er.left) - (el.clientWidth - ar.width) / 2);
+      }
+    }
+    updateFade(el);
+  });
+}
+let fadeRaf = 0;
+const fadeDirty = new Set();
+view.addEventListener('scroll', e => {
+  const t = e.target;
+  if (t === view || !t?.matches?.(TAB_SEL)) return;
+  fadeDirty.add(t);
+  if (!fadeRaf) fadeRaf = requestAnimationFrame(() => {
+    fadeRaf = 0;
+    fadeDirty.forEach(updateFade);
+    fadeDirty.clear();
+  });
+}, { capture: true, passive: true });
+let resizeRaf = 0;
+addEventListener('resize', () => {
+  if (!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; refreshFades(view, false); });
+}, { passive: true });
+phoneQ.addEventListener('change', e => {
+  if (!e.matches) resetScrollChrome();
+  refreshFades(view, false);
+});
 
 // ---------- router & boot ----------
 async function route() {
@@ -953,11 +1178,15 @@ async function route() {
   const fn = { '': home, c: course, courses, p: problem, review, tools, sim, settings }[a] || notFound;
   await fx.transition(async () => {
     document.body.dataset.page = a || 'home';
+    resetScrollChrome();
     view.onclick = null;
     nav();
     const r = await fn(b, c);
     if (typeof r === 'function') cleanup = r;
     if (a !== 'p') view.scrollTop = 0;
+    syncSlimBar();
+    refreshFades(view, true);
+    requestAnimationFrame(() => refreshFades(view, false));
     fx.stagger(view); fx.countUp(view);
   });
 }
