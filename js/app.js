@@ -2,7 +2,7 @@ import * as db from './db.js';
 import { S, persist, dayKey, uid } from './db.js';
 import { createBoard, renderTo, COLORS } from './board.js';
 import * as T from './tools.js';
-import { $, $$, esc, modal, confirmBox, toast, icon, download, loadScript } from './ui.js';
+import { $, $$, esc, modal, confirmBox, toast, icon, logo, download, loadScript } from './ui.js';
 import * as fx from './fx.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
@@ -256,6 +256,7 @@ function pomoToggle() {
 function pomoSet(min) { clearInterval(pomo.iv); pomo.iv = 0; pomo.total = pomo.left = min * 60; pomoUI(); }
 function pomoUI() {
   const t = dur(pomo.left);
+  document.body.classList.toggle('pomo-running', !!pomo.iv);
   $$('[data-pomo-t]').forEach(e => e.textContent = t);
   $$('[data-pomo-go]').forEach(e => e.innerHTML = pomo.iv ? `${icon('pause')} Durdur` : `${icon('play')} ${pomo.left < pomo.total ? 'Devam' : 'Başlat'}`);
   $$('[data-pomo-m]').forEach(e => e.classList.toggle('on', +e.dataset.pomoM * 60 === pomo.total));
@@ -268,8 +269,9 @@ function nav() {
   const [a, b] = route_(), here = a || '';
   const link = (href, ic, label, active, extra = '') => `<a href="${href}" class="nav-link ${active ? 'on' : ''}">${icon(ic)}<span>${label}</span>${extra}</a>`;
   const rev = S.problems.filter(p => p.status === 'review').length;
-  $('#nav').innerHTML = `
-    <a href="#/" class="brand" aria-label="MathPad ana sayfa"><img src="icons/icon.svg" alt=""><span>MATH<b>PAD</b></span></a>
+  // brand is rendered once so its looping animation never restarts on navigation
+  if (!$('#nav-body')) $('#nav').innerHTML = `<a href="#/" class="brand" aria-label="MathPad ana sayfa">${logo()}<span>MATH<b>PAD</b></span></a><div id="nav-body" class="nav-body"></div>`;
+  $('#nav-body').innerHTML = `
     <button class="btn primary new-btn" data-act="new">${icon('plus')} Yeni soru</button>
     ${link('#/', 'home', 'Panel', here === '')}
     ${link('#/courses', 'book', 'Dersler', here === 'courses')}
@@ -296,21 +298,24 @@ function home() {
   const C = 2 * Math.PI * 52, frac = Math.min(1, n / goal);
 
   view.innerHTML = `<div class="page">
+    <svg class="orbit-deco loop" viewBox="-200 -200 400 400" aria-hidden="true"><g transform="rotate(-18)">
+      ${[[190, 60, 17], [140, 44, 11], [92, 29, 7]].map(([rx, ry, d], i) => `<ellipse rx="${rx}" ry="${ry}"/><g class="orb-x" style="--rx:${rx}px;--ry:${ry}px;--d:${d}s;animation-delay:-${i * 2}s"><g class="orb-y"><circle r="${3 - i * .5}"/></g></g>`).join('')}
+      <circle r="22" class="od-core"/></g></svg>
     <header class="page-h"><div><p class="eyebrow">${new Date().toLocaleDateString('tr', { weekday: 'long', day: 'numeric', month: 'long' })} <span class="coord">· GÜN ${Math.ceil((Date.now() - new Date(new Date().getFullYear(), 0, 1)) / 864e5)}</span></p><h1>${greet}</h1></div>
       <button class="btn primary" data-act="new">${icon('plus')} Yeni soru</button></header>
     ${!window.desktop && S.problems.length >= 5 && daysSince(S.lastBackup) >= 7 ? `<div class="card pad reminder">${icon('download')}<div class="grow"><b>${S.lastBackup ? `Son yedeğin ${daysSince(S.lastBackup)} gün önce` : 'Henüz hiç yedek almadın'}</b><p class="mute small">${S.problems.length} sorun sadece bu tarayıcıda duruyor. Bir yedek al, içi rahat etsin.</p></div><button class="btn primary" data-act="backup">Yedek al</button></div>` : ''}
-    ${S.problems.length ? '' : `<div class="card pad welcome"><h3>MathPad'e hoş geldin ✦</h3>
+    ${S.problems.length ? '' : `<div class="card pad welcome">${logo('xl')}<h3>MathPad'e hoş geldin ✦</h3>
       <ol><li><b>Yeni soru</b>'ya bas, dersini seç.</li><li>Sorunun fotoğrafını çek ya da PDF'ten sayfa ekle.</li><li>Tahtada kalemle çöz, bitince <b>Çözüldü</b> de. İstatistiğin kendiliğinden tutulur.</li></ol>
       <button class="btn primary" data-act="new">${icon('plus')} İlk sorunu ekle</button></div>`}
     <div class="dash">
       <div class="card pad goal">
-        <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" style="--c:${C};stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)}"/></svg>
+        <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" style="--c:${C};stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)}"/><circle cx="60" cy="60" r="52" class="ring-comet loop" pathLength="100"/></svg>
         <div class="goal-txt"><b class="big mono"><span data-count="${n}">${n}</span><span>/${goal}</span></b><span class="mute">bugün çözülen</span></div>
         <div class="goal-side"><p>${n >= goal ? 'Hedef tamam. Harikasın ✦' : `Hedefe <b>${goal - n}</b> soru kaldı`}</p><button class="btn ghost small" data-act="goal">Hedefi değiştir</button></div>
       </div>
       <div class="kpis">
         <div class="card pad kpi">${icon('chart')}<b class="mono" data-count="${week}">${week}</b><span>bu hafta</span></div>
-        <div class="card pad kpi">${icon('flame')}<b class="mono" data-count="${st}">${st}</b><span>gün seri</span></div>
+        <div class="card pad kpi">${icon('flame', 'flicker loop')}<b class="mono" data-count="${st}">${st}</b><span>gün seri</span></div>
         <div class="card pad kpi">${icon('clock')}<b class="mono">${hm(S.time[today])}</b><span>bugün çalışma</span></div>
         <div class="card pad kpi">${icon('check')}<b class="mono" data-count="${total}">${total}</b><span>toplam çözülen</span></div>
       </div>
@@ -319,7 +324,7 @@ function home() {
           <div class="goal-line" style="bottom:calc(${goal / max} * (100% - 34px) + 18px)"><span>hedef</span></div></div></div>
       <div class="card pad pomo">
         <div class="card-h"><h3>Odak sayacı</h3><span class="mute small">bugün ${S.pomos[today] || 0} seans</span></div>
-        <div class="pomo-body"><svg viewBox="0 0 100 100" class="pomo-ring"><circle cx="50" cy="50" r="45" class="ring-bg"/><circle cx="50" cy="50" r="45" class="ring-fg" data-pomo-ring style="stroke-dasharray:283"/></svg><b class="mono" data-pomo-t></b></div>
+        <div class="pomo-body"><svg viewBox="0 0 100 100" class="pomo-ring"><circle cx="50" cy="50" r="45" class="ring-bg"/><circle cx="50" cy="50" r="45" class="ring-fg" data-pomo-ring style="stroke-dasharray:283"/><circle cx="50" cy="50" r="45" class="ring-comet loop pomo-comet" pathLength="100"/></svg><b class="mono" data-pomo-t></b></div>
         <div class="row center"><button class="chip" data-pomo-m="25">25 dk</button><button class="chip" data-pomo-m="50">50 dk</button><button class="chip" data-pomo-m="5">5 dk mola</button></div>
         <button class="btn primary wide" data-pomo-go></button>
       </div>
@@ -344,7 +349,7 @@ function pcard(p) {
     <span class="badge ${p.status}">${STATUS[p.status]}</span></a>`;
 }
 function loadThumbs(root) {
-  $$('img[data-thumb]', root).forEach(async img => { const src = await db.get('t:' + img.dataset.thumb); if (src) { img.src = src; img.parentNode.classList.add('has'); } });
+  $$('img[data-thumb]', root).forEach(async img => { const src = await db.get('t:' + img.dataset.thumb); img.parentNode.classList.add(src ? 'has' : 'none'); if (src) img.src = src; });
 }
 
 function course(id) {
@@ -369,7 +374,7 @@ function course(id) {
   function render() {
     const rows = ps.filter(p => (filter === 'all' || p.status === filter) && (!topic || p.topic === topic) && (!q || (p.title + ' ' + p.topic).toLocaleLowerCase('tr').includes(q)));
     list.className = rows.length ? 'pgrid' : '';
-    list.innerHTML = rows.map(pcard).join('') || `<div class="empty card pad">${icon('image')}<p>${ps.length ? 'Bu filtrede soru yok.' : 'Bu derste henüz soru yok.'}</p>${ps.length ? '' : `<button class="btn primary" data-act="new">${icon('plus')} Soru ekle</button>`}</div>`;
+    list.innerHTML = rows.map(pcard).join('') || `<div class="empty card pad">${logo('float')}<p>${ps.length ? 'Bu filtrede soru yok.' : 'Bu derste henüz soru yok.'}</p>${ps.length ? '' : `<button class="btn primary" data-act="new">${icon('plus')} Soru ekle</button>`}</div>`;
     loadThumbs(list);
   }
   $('[data-f]').onclick = e => { const k = e.target.dataset.k; if (!k) return; filter = k; pref('filter', k); $$('[data-f] button').forEach(b => b.classList.toggle('on', b === e.target)); render(); };
@@ -708,6 +713,7 @@ function space() {
   const el = $('#space');
   el.style.setProperty('--s1', make(170, .8, .45));
   el.style.setProperty('--s2', make(28, 1.4, .85));
+  el.style.setProperty('--s3', make(16, 1.7, 1)); // twinkling layer
 }
 
 document.addEventListener('click', e => {
@@ -724,14 +730,19 @@ addEventListener('hashchange', route);
 
 if (window.desktop) {
   document.body.classList.add('desktop');
-  document.body.insertAdjacentHTML('afterbegin', '<div class="titlebar"><img src="icons/icon.svg" alt=""><span>MATH<b>PAD</b></span></div>');
+  document.body.insertAdjacentHTML('afterbegin', `<div class="titlebar">${logo()}<span>MATH<b>PAD</b></span></div>`);
   desktop.onOpenFile(f => restoreBackup(f.name, f.text));
 }
 
 (async () => {
   space();
+  const t0 = Date.now();
+  document.body.insertAdjacentHTML('beforeend', `<div id="splash" aria-hidden="true">${logo('xl')}<span>MATH<b>PAD</b></span></div>`);
+  const hideSplash = () => { const s = $('#splash'); if (!s) return; s.classList.add('out'); setTimeout(() => s.remove(), 600); };
   try { await db.load(); applyPrefs(); }
-  catch (err) { view.innerHTML = `<div class="page"><div class="card pad"><h3>Depolama açılamadı</h3><p class="mute">${esc(err.message)}. Gizli pencere kullanıyorsan normal pencerede aç.</p></div></div>`; return; }
+  catch (err) { hideSplash(); view.innerHTML = `<div class="page"><div class="card pad"><h3>Depolama açılamadı</h3><p class="mute">${esc(err.message)}. Gizli pencere kullanıyorsan normal pencerede aç.</p></div></div>`; return; }
+  if (!fx.full()) $('#splash')?.remove();
   route(); autoBackup();
+  setTimeout(hideSplash, Math.max(0, 1100 - (Date.now() - t0))); // let the intro play once, never longer
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
 })();

@@ -549,3 +549,87 @@ body.desktop dialog, body.desktop button, body.desktop a, body.desktop input { -
 .orbit-loader { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.25); border-top-color: var(--fg); animation: spin .8s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .toast-act { white-space: nowrap; flex: none; }
+
+/* =====================================================================
+   v2.3 — living space: looping logo, sky, orbits, comets, splash
+   ===================================================================== */
+.nav-body { display: contents; }
+.logo { overflow: visible; flex: none; }
+.brand .logo { width: 36px; height: 36px; margin: -3px 0; }
+body.desktop .titlebar .logo { width: 20px; height: 20px; }
+.logo.xl { width: 96px; height: 96px; }
+.welcome .logo.xl { float: right; margin: -8px -4px 0 16px; }
+.lg-glow { fill: #fff; opacity: .035; transform-box: fill-box; transform-origin: center; animation: lg-breathe 5s ease-in-out infinite; }
+.lg-ring, .lg-ring-front { fill: none; stroke: rgba(255,255,255,.38); stroke-width: 2.2; }
+.lg-ring-front { stroke: rgba(255,255,255,.75); }
+.lg-ring-run { fill: none; stroke: #fff; stroke-width: 2.8; stroke-linecap: round; stroke-dasharray: 16 84; animation: lg-run 4.5s linear infinite; filter: drop-shadow(0 0 2px #fff); }
+.lg-planet { fill: #0b0b0e; stroke: #fff; stroke-width: 2.4; }
+.lg-sigma { fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.lg-moon { fill: #fff; filter: drop-shadow(0 0 2px #fff); }
+@keyframes lg-run { to { stroke-dashoffset: -100; } }
+@keyframes lg-breathe { 50% { opacity: .1; transform: scale(1.15); } }
+
+/* reusable elliptical orbit: two eased axes a quarter-period apart (--rx, --ry, --d) */
+.orb-x { animation: orb-x var(--d) ease-in-out infinite alternate; }
+.orb-y { animation: orb-y var(--d) ease-in-out infinite alternate; animation-delay: calc(var(--d) / -2); }
+@keyframes orb-x { from { transform: translateX(calc(-1 * var(--rx))); } to { transform: translateX(var(--rx)); } }
+@keyframes orb-y { from { transform: translateY(calc(-1 * var(--ry))); opacity: .18; } to { transform: translateY(var(--ry)); opacity: 1; } }
+
+/* sky: drifting nebula, twinkling stars, occasional shooting stars */
+#space > i { position: absolute; display: block; pointer-events: none; }
+#space .neb { inset: -20%; background: radial-gradient(ellipse 38% 28% at 72% 28%, rgba(255,255,255,.055), transparent 70%), radial-gradient(ellipse 32% 24% at 22% 78%, rgba(170,185,255,.045), transparent 70%); animation: neb 80s ease-in-out infinite alternate; }
+@keyframes neb { to { transform: translate(-4%, 3%) scale(1.15) rotate(6deg); } }
+#space .tw { inset: 0; background-image: var(--s3); animation: twinkle 5s ease-in-out infinite alternate; }
+@keyframes twinkle { from { opacity: .12; } to { opacity: .95; } }
+#space .ss { top: 10%; left: 72%; width: 130px; height: 1.5px; opacity: 0; border-radius: 2px; background: linear-gradient(90deg, #fff, transparent); filter: drop-shadow(0 0 4px #fff); animation: ss 13s linear 3s infinite; }
+#space .ss.s2 { top: 32%; left: 96%; width: 90px; animation-duration: 19s; animation-delay: 9s; }
+#space .ss.s3 { top: 4%; left: 44%; width: 160px; animation-duration: 29s; animation-delay: 17s; }
+@keyframes ss { 0% { opacity: 0; transform: translate(0, 0) rotate(-35deg) scaleX(.2); } 1% { opacity: 1; } 6% { opacity: 0; transform: translate(-380px, 266px) rotate(-35deg) scaleX(1); } 100% { opacity: 0; transform: translate(-380px, 266px) rotate(-35deg); } }
+
+/* dashboard: slow orbital diagram behind the greeting */
+.page { position: relative; }
+.page > :not(.orbit-deco) { position: relative; z-index: 1; }
+.orbit-deco { position: absolute; top: -110px; right: -70px; width: 560px; height: 560px; opacity: .55; pointer-events: none; z-index: 0; -webkit-mask: radial-gradient(closest-side, #000 60%, transparent); mask: radial-gradient(closest-side, #000 60%, transparent); }
+.orbit-deco ellipse, .od-core { fill: none; stroke: rgba(255,255,255,.12); }
+.od-core { stroke: rgba(255,255,255,.25); animation: lg-breathe 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.orbit-deco .orb-y circle { fill: #fff; filter: drop-shadow(0 0 3px #fff); }
+
+/* rings: a comet of light keeps orbiting the track */
+.ring-comet { fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-dasharray: .1 99.9; animation: comet 7s linear infinite; filter: drop-shadow(0 0 4px #fff); }
+@keyframes comet { to { stroke-dashoffset: -100; } }
+.pomo-comet { opacity: 0; transition: opacity var(--t-med); animation-duration: 2.4s; }
+body.pomo-running .pomo-comet { opacity: 1; }
+body.pomo-running .pomo-ring .ring-fg { filter: drop-shadow(0 0 10px rgba(255,255,255,.7)); }
+
+/* small living details */
+.flicker { transform-origin: 50% 90%; animation: flicker 2.4s ease-in-out infinite; }
+@keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); opacity: .8; } 35% { transform: scale(1.08, 1.16) rotate(2deg); opacity: 1; } 65% { transform: scale(.96, 1.05) rotate(-1deg); } }
+.bar.today i { animation: grow .7s var(--ease-out) both calc(var(--i, 0) * 35ms + 150ms), glow-pulse 2.8s ease-in-out 1s infinite; }
+@keyframes glow-pulse { 50% { box-shadow: 0 0 26px rgba(255,255,255,.85); } }
+.logo.float { width: 72px; height: 72px; animation: float 5s ease-in-out infinite; }
+@keyframes float { 50% { transform: translateY(-8px) rotate(3deg); } }
+.thumb:not(.has):not(.none) { background: linear-gradient(100deg, #0b0b0e 30%, #17171c 50%, #0b0b0e 70%) 0 0 / 300% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { to { background-position: -150% 0; } }
+
+/* main call-to-action: a light orbiting its border */
+@property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.new-btn { overflow: visible; isolation: isolate; }
+.new-btn::after { display: none; }
+.new-btn::before { content: ""; position: absolute; inset: -2px; border-radius: 12px; z-index: -1; background: conic-gradient(from var(--a), transparent 0 68%, rgba(255,255,255,.95) 86%, transparent 100%); filter: blur(1.5px); animation: spin-a 4.5s linear infinite; }
+@keyframes spin-a { to { --a: 360deg; } }
+
+/* intro splash (once per launch) */
+#splash { position: fixed; inset: 0; z-index: 300; display: grid; place-content: center; justify-items: center; gap: 22px; background: radial-gradient(circle at 50% 45%, #0d0d10, #000 60%); transition: opacity .5s var(--ease-out), transform .6s var(--ease-out); }
+#splash.out { opacity: 0; transform: scale(1.06); pointer-events: none; }
+#splash .logo { width: 128px; height: 128px; animation: splash-in 1s var(--ease-spring) both; }
+#splash .lg-ring { stroke-dasharray: 100; animation: draw-ring 1.1s var(--ease-out) both .15s; }
+#splash span { font-size: 13px; letter-spacing: .55em; color: var(--mute); animation: rise .8s var(--ease-out) both .35s; }
+#splash span b { color: var(--dim); font-weight: 500; }
+@keyframes splash-in { from { opacity: 0; transform: scale(.55) rotate(-40deg); filter: blur(8px); } }
+@keyframes draw-ring { from { stroke-dashoffset: 100; } }
+
+/* calmer motion settings: stop every loop; hide orbiting bodies that would otherwise sit frozen in the middle */
+html[data-motion="reduced"] :is(.loop, .loop *, .new-btn, .bar.today i, .thumb, .flicker), html[data-motion="reduced"] .new-btn::before { animation: none !important; }
+html:is([data-motion="reduced"], [data-motion="off"]) :is(.orb-x, #space .ss) { display: none; }
+@media (prefers-reduced-motion: reduce) { .orb-x, #space .ss { display: none; } }
+#view { overflow-x: hidden; } /* orbit decoration may bleed past the right edge */

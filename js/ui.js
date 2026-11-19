@@ -94,5 +94,15 @@ const P = {
   star: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z',
   install: 'M12 3v12|M7 10l5 5 5-5|M4 21h16',
 };
+// Animated logo: planet with a light running around its ring and a moon on a tilted orbit (CSS loops in app.css).
+export const logo = (cls = '') => `<svg class="logo loop ${cls}" viewBox="0 0 64 64" aria-hidden="true">
+  <circle class="lg-glow" cx="32" cy="32" r="17"/>
+  <g transform="rotate(-22 32 32)"><ellipse class="lg-ring" cx="32" cy="32" rx="27" ry="7.5" pathLength="100"/><ellipse class="lg-ring-run" cx="32" cy="32" rx="27" ry="7.5" pathLength="100"/></g>
+  <circle class="lg-planet" cx="32" cy="32" r="13"/>
+  <path class="lg-sigma" d="M37 26h-10l6 6-6 6h10"/>
+  <g transform="rotate(-22 32 32)"><path class="lg-ring-front" d="M5 32a27 7.5 0 0 0 54 0"/>
+    <g class="orb-x" style="--rx:27px;--ry:7.5px;--d:3.2s"><g class="orb-y"><circle class="lg-moon" cx="32" cy="32" r="2.3"/></g></g></g>
+</svg>`;
+
 export const icon = (n, cls = '') =>
   `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n].split('|').map(d => `<path d="${d}"/>`).join('')}</svg>`;
