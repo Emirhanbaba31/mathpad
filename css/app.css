@@ -794,3 +794,4 @@ body.focus .pb { grid-template-rows: 1fr; }
 }
 html[data-motion="reduced"] :is(.astro *, .scope-beam, .gd.today, .scope-pt.now) { animation: none !important; }
 .astro-model { margin-left: auto; width: auto; max-width: 170px; height: 32px; padding: 0 8px; font-size: 12px; }
+.set [data-note].err { color: var(--red); }

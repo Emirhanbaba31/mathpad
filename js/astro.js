@@ -4,22 +4,8 @@ import { esc, icon, toast } from './ui.js';
 import { renderNote } from './tools.js';
 import * as db from './db.js';
 
-// Line-art astronaut. Loops (float, visor glint, antenna, wave) live in app.css.
-export const astronaut = (cls = '') => `<svg class="astro loop ${cls}" viewBox="0 0 100 124" aria-hidden="true">
-  <defs><clipPath id="astro-visor"><ellipse cx="50" cy="40" rx="16" ry="12"/></clipPath></defs>
-  <g class="astro-body">
-    <line x1="50" y1="15" x2="50" y2="7" class="a-line"/><circle cx="50" cy="5" r="2.4" class="a-blink"/>
-    <rect x="27" y="62" width="46" height="30" rx="9" class="a-pack"/>
-    <path d="M34 72 q-13 7 -15 20" class="a-line"/><circle cx="19" cy="93" r="3.2" class="a-fill"/>
-    <g class="astro-wave"><path d="M66 72 q13 -4 17 -17" class="a-line"/><circle cx="83" cy="54" r="3.2" class="a-fill"/></g>
-    <rect x="33" y="60" width="34" height="36" rx="12" class="a-suit"/>
-    <rect x="42" y="70" width="16" height="10" rx="3" class="a-line"/><circle cx="46.5" cy="75" r="1.4" class="a-blink"/><circle cx="53.5" cy="75" r="1.4" class="a-fill"/>
-    <path d="M43 96 v14 h-5 M57 96 v14 h5" class="a-line"/>
-    <circle cx="50" cy="38" r="24" class="a-suit"/>
-    <ellipse cx="50" cy="40" rx="16" ry="12" class="a-visor"/>
-    <g clip-path="url(#astro-visor)"><rect x="20" y="22" width="7" height="40" class="a-glint" transform="rotate(25 50 40)"/></g>
-    <path d="M40 34 q4 -4 9 -4" class="a-shine"/>
-  </g></svg>`;
+// Nova the astronaut, designed by Gemini 4 Neon. Loops (float, visor glint, antenna, wave) live in app.css.
+export const astronaut = (cls = '') => `<svg class='astro loop ${cls}' viewBox='0 0 100 124' aria-hidden='true'><defs><clipPath id='astro-visor'><path d='M 50 27.5 C 63.5 27.5 69 32.5 69 42 C 69 51 63 55.5 50 55.5 C 37 55.5 31 51 31 42 C 31 32.5 36.5 27.5 50 27.5 Z'/></clipPath></defs><g class='astro-body'><rect class='a-pack' x='26.5' y='55.5' width='47' height='31' rx='7'/><path class='a-suit' d='M 35 86 L 34.5 104.5 C 32.2 106.5 31.8 110.5 33.5 112.8 C 34.8 114.2 36.8 114.5 39.5 114.5 L 44.5 114.5 C 46.8 114.5 47.5 113 47.5 110.5 L 47.5 86 Z'/><path class='a-line' d='M 34.8 105.2 Q 41 106.6 47.2 105.2'/><rect class='a-line' x='38.2' y='94.5' width='5.6' height='4.6' rx='2'/><path class='a-suit' d='M 65 86 L 65.5 104.5 C 67.8 106.5 68.2 110.5 66.5 112.8 C 65.2 114.2 63.2 114.5 60.5 114.5 L 55.5 114.5 C 53.2 114.5 52.5 113 52.5 110.5 L 52.5 86 Z'/><path class='a-line' d='M 52.8 105.2 Q 59 106.6 65.2 105.2'/><rect class='a-line' x='56.2' y='94.5' width='5.6' height='4.6' rx='2'/><path class='a-suit' d='M 34 67.4 C 27.5 68 23.5 74 22.2 83.5 C 20.5 87.5 22.5 91.8 26.2 91.5 C 29.8 91.2 31.5 88.2 30.5 85 C 31.5 81 32.5 78 34 76.6 Z'/><path class='a-line' d='M 22.5 83.6 Q 26.5 85.4 30.3 85'/><g class='astro-wave'><path class='a-suit' d='M 66 67.4 C 71 67.4 74.5 64 77 58.5 C 75.5 56 76 52.5 79 51 C 82 48.2 87 49 88.2 52.5 C 89.2 55.5 87.5 59 84.5 61 C 82 67.5 76 76 66 76.6 A 4.6 4.6 0 0 1 66 67.4 Z'/><path class='a-line' d='M 77.2 58.6 Q 81.2 58.4 84.3 60.8'/></g><path class='a-suit' d='M 36.5 64 C 34 65 34 69 34 74 L 34.5 85 C 34.5 88.5 37 90 41 90 L 59 90 C 63 90 65.5 88.5 65.5 85 L 66 74 C 66 69 66 65 63.5 64 Z'/><path class='a-line' d='M 34.5 84.5 Q 50 86.2 65.5 84.5'/><rect class='a-fill' x='46.5' y='83.5' width='7' height='3.6' rx='1.4'/><path class='a-line' d='M 30 59.5 C 29 66.5 32.5 74.5 41 75.8'/><rect class='a-suit' x='40.5' y='71' width='19' height='9.6' rx='2.6'/><circle class='a-blink' cx='45' cy='75.8' r='1.6'/><circle class='a-blink' cx='50' cy='75.8' r='1.6'/><circle class='a-fill' cx='55' cy='75.8' r='1.7'/><path class='a-suit' d='M 36.5 58.5 L 63.5 58.5 L 63 64.5 Q 50 68.5 37 64.5 Z'/><rect class='a-suit' x='22.2' y='35' width='6' height='10' rx='3'/><rect class='a-suit' x='71.8' y='35' width='6' height='10' rx='3'/><line class='a-line' x1='50' y1='18.2' x2='50' y2='11.8'/><circle class='a-blink' cx='50' cy='9.2' r='2.6'/><ellipse class='a-suit' cx='50' cy='40' rx='24.5' ry='22'/><path class='a-visor' d='M 50 27.5 C 63.5 27.5 69 32.5 69 42 C 69 51 63 55.5 50 55.5 C 37 55.5 31 51 31 42 C 31 32.5 36.5 27.5 50 27.5 Z'/><g clip-path='url(#astro-visor)'><rect class='a-glint' x='38' y='24' width='8' height='35' transform='rotate(18 42 41.5)'/></g><path class='a-shine' d='M 36.5 39 C 36.5 35 39.5 32.5 44.5 32'/></g></svg>`;
 
 // ---------- providers & models (all kept in this browser only; never in backups) ----------
 const LS = {
@@ -154,11 +140,27 @@ export function keyCard(el) {
     ${has ? `<div class="set-row"><span>Model</span><div class="row"><select class="inp" data-model style="max-width:320px" aria-label="Model">${modelOptions(p, models)}</select><button type="button" class="btn ghost small" data-refresh>Listeyi yenile</button></div></div>` : ''}
     <p class="mute small" data-note>Anahtarlar sadece bu cihazda saklanır; yedeklere ve paylaşılan ders dosyalarına girmez. Nova'ya sorduğunda tahtanın görüntüsü seçtiğin şirkete gönderilir.</p>`;
   el.querySelector('[data-prov]').onclick = e => { const v = e.target.closest('[data-v]')?.dataset.v; if (v && v !== p) { LS.set('mp.aiProvider', v); keyCard(el); } };
+  const note = el.querySelector('[data-note]');
+  const status = (msg, bad) => { note.textContent = msg; note.classList.toggle('err', !!bad); };
   el.querySelector('[data-keyform]').onsubmit = async e => {
     e.preventDefault();
-    const k = e.target.k.value.trim();
-    if (!P.re.test(k)) return toast(`Bu bir ${P.name} anahtarına benzemiyor (${P.hint.replace('…', '')} ile başlamalı)`);
-    setKey(p, k); keyCard(el); refresh(true);
+    const k = e.target.k.value.replace(/\s+/g, '').replace(/^['"]+|['"]+$/g, ''); // pasted keys often carry spaces/quotes
+    if (k.length < 20) return status('Anahtar çok kısa görünüyor; tamamını kopyaladığından emin ol.', true);
+    // the key itself tells which company it belongs to: switch if the other tab was selected
+    const q = Object.keys(PROVIDERS).find(x => PROVIDERS[x].re.test(k)) || p;
+    if (q !== p) LS.set('mp.aiProvider', q);
+    const old = getKey(q); setKey(q, k);
+    e.target.querySelector('button').disabled = true;
+    status(`${PROVIDERS[q].name} anahtarı kontrol ediliyor…`);
+    try { await listModels(q); keyCard(el); toast(`${PROVIDERS[q].name} anahtarı doğrulandı, Nova hazır ✦`); }
+    catch (err) {
+      const rejected = err?.keyBad || err?.status === 400 || err?.status === 401 || err instanceof Anthropic.AuthenticationError;
+      if (rejected) setKey(q, old); // keep a wrong key out; network trouble keeps it
+      if (q !== p) keyCard(el);
+      el.querySelector('[data-note]').textContent = `${friendlyError(err)}${err?.message ? ` — sunucunun cevabı: ${err.message}` : ''}`;
+      el.querySelector('[data-note]').classList.add('err');
+      el.querySelector('[data-keyform] button').disabled = false;
+    }
   };
   el.querySelector('[data-keydel]')?.addEventListener('click', () => { setKey(p, ''); toast('Anahtar silindi'); keyCard(el); });
   el.querySelector('[data-model]')?.addEventListener('change', e => { setModel(p, e.target.value); toast(`Nova artık ${e.target.selectedOptions[0].text} kullanıyor ✦`); });
