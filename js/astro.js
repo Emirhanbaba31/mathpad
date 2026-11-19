@@ -3,9 +3,13 @@ import Anthropic from '../vendor/anthropic.mjs';
 import { esc, icon, toast } from './ui.js';
 import { renderNote } from './tools.js';
 import * as db from './db.js';
+import { full } from './fx.js';
 
 // Nova the astronaut, designed by Gemini 4 Neon. Loops (float, visor glint, antenna, wave) live in app.css.
 export const astronaut = (cls = '') => `<svg class='astro loop ${cls}' viewBox='0 0 100 124' aria-hidden='true'><defs><clipPath id='astro-visor'><path d='M 50 27.5 C 63.5 27.5 69 32.5 69 42 C 69 51 63 55.5 50 55.5 C 37 55.5 31 51 31 42 C 31 32.5 36.5 27.5 50 27.5 Z'/></clipPath></defs><g class='astro-body'><rect class='a-pack' x='26.5' y='55.5' width='47' height='31' rx='7'/><path class='a-suit' d='M 35 86 L 34.5 104.5 C 32.2 106.5 31.8 110.5 33.5 112.8 C 34.8 114.2 36.8 114.5 39.5 114.5 L 44.5 114.5 C 46.8 114.5 47.5 113 47.5 110.5 L 47.5 86 Z'/><path class='a-line' d='M 34.8 105.2 Q 41 106.6 47.2 105.2'/><rect class='a-line' x='38.2' y='94.5' width='5.6' height='4.6' rx='2'/><path class='a-suit' d='M 65 86 L 65.5 104.5 C 67.8 106.5 68.2 110.5 66.5 112.8 C 65.2 114.2 63.2 114.5 60.5 114.5 L 55.5 114.5 C 53.2 114.5 52.5 113 52.5 110.5 L 52.5 86 Z'/><path class='a-line' d='M 52.8 105.2 Q 59 106.6 65.2 105.2'/><rect class='a-line' x='56.2' y='94.5' width='5.6' height='4.6' rx='2'/><path class='a-suit' d='M 34 67.4 C 27.5 68 23.5 74 22.2 83.5 C 20.5 87.5 22.5 91.8 26.2 91.5 C 29.8 91.2 31.5 88.2 30.5 85 C 31.5 81 32.5 78 34 76.6 Z'/><path class='a-line' d='M 22.5 83.6 Q 26.5 85.4 30.3 85'/><g class='astro-wave'><path class='a-suit' d='M 66 67.4 C 71 67.4 74.5 64 77 58.5 C 75.5 56 76 52.5 79 51 C 82 48.2 87 49 88.2 52.5 C 89.2 55.5 87.5 59 84.5 61 C 82 67.5 76 76 66 76.6 A 4.6 4.6 0 0 1 66 67.4 Z'/><path class='a-line' d='M 77.2 58.6 Q 81.2 58.4 84.3 60.8'/></g><path class='a-suit' d='M 36.5 64 C 34 65 34 69 34 74 L 34.5 85 C 34.5 88.5 37 90 41 90 L 59 90 C 63 90 65.5 88.5 65.5 85 L 66 74 C 66 69 66 65 63.5 64 Z'/><path class='a-line' d='M 34.5 84.5 Q 50 86.2 65.5 84.5'/><rect class='a-fill' x='46.5' y='83.5' width='7' height='3.6' rx='1.4'/><path class='a-line' d='M 30 59.5 C 29 66.5 32.5 74.5 41 75.8'/><rect class='a-suit' x='40.5' y='71' width='19' height='9.6' rx='2.6'/><circle class='a-blink' cx='45' cy='75.8' r='1.6'/><circle class='a-blink' cx='50' cy='75.8' r='1.6'/><circle class='a-fill' cx='55' cy='75.8' r='1.7'/><path class='a-suit' d='M 36.5 58.5 L 63.5 58.5 L 63 64.5 Q 50 68.5 37 64.5 Z'/><rect class='a-suit' x='22.2' y='35' width='6' height='10' rx='3'/><rect class='a-suit' x='71.8' y='35' width='6' height='10' rx='3'/><line class='a-line' x1='50' y1='18.2' x2='50' y2='11.8'/><circle class='a-blink' cx='50' cy='9.2' r='2.6'/><ellipse class='a-suit' cx='50' cy='40' rx='24.5' ry='22'/><path class='a-visor' d='M 50 27.5 C 63.5 27.5 69 32.5 69 42 C 69 51 63 55.5 50 55.5 C 37 55.5 31 51 31 42 C 31 32.5 36.5 27.5 50 27.5 Z'/><g clip-path='url(#astro-visor)'><rect class='a-glint' x='38' y='24' width='8' height='35' transform='rotate(18 42 41.5)'/></g><path class='a-shine' d='M 36.5 39 C 36.5 35 39.5 32.5 44.5 32'/></g></svg>`;
+
+// Nova's ship, designed by Gemini 4 Neon. The tether leaves from the s-port ring at (46, 66).
+export const ship = (cls = '') => `<svg class='ship ${cls}' viewBox='0 0 160 90' aria-hidden='true'> <defs> <clipPath id='ship-cockpit'> <path d='M 23.5 36 C 25.5 22.5 37.5 18 48.5 19.5 C 55.5 20.5 60 25.5 59.5 32.5 C 59 38 52.5 40.5 42 41 C 30.5 41.5 23 40.5 23.5 36 Z'/> </clipPath> </defs> <g class='s-flame'> <path d='M 118 41.5 Q 132 41.5 141 47 Q 132 52.5 118 52.5 Z'/> <path d='M 118 44.2 Q 126.5 44.2 131.5 47 Q 126.5 49.8 118 49.8 Z'/> </g> <g class='s-hull'> <line class='a-pack' x1='91' y1='60' x2='93' y2='72.5'/> <line class='a-pack' x1='85' y1='72.5' x2='100' y2='72.5'/> <path class='a-pack' d='M 78 29 C 87 20 98 14 109 14 C 113 14 113.5 18 110.5 23 C 107.5 28 106 32.5 105.5 37.5 Z'/> <path class='a-pack' d='M 93 55 C 103 57.5 111.5 60.5 112.5 63.5 C 113.5 66 108.5 67 101 65 L 90 61.5 Z'/> <line class='a-line' x1='69.5' y1='26' x2='69.5' y2='14.5'/> <path class='a-line' d='M 65 18 Q 69.5 21.5 74 18'/> <circle class='s-beacon' cx='69.5' cy='12' r='2.5'/> <line class='a-line' x1='62' y1='63.5' x2='60' y2='77'/> <line class='a-line' x1='81' y1='62' x2='83' y2='77'/> <path class='a-line' d='M 53.5 73.5 Q 56 77 61 77 L 89 77'/> <path class='a-suit' d='M 106 40.5 L 120 38.5 C 122.8 38.5 122.8 55.5 120 55.5 L 106 53.5 Z'/> <line class='a-line' x1='114.5' y1='39.3' x2='114.5' y2='54.7'/> <path class='a-suit' d='M 14 48 C 14 34 30 25 56 25 C 80 25 99 30 108 37 C 111.5 41 111.5 52 108 56 C 99 61 80 64.5 54 64.5 C 29 64.5 14 58.5 14 48 Z'/> <path class='a-line' d='M 28 40.5 C 25.5 48.5 27 56.5 31.5 62.3'/> <path class='a-line' d='M 99.4 32.2 C 95.8 41 95.8 51 99.4 59.4'/> <path class='a-visor' d='M 23.5 36 C 25.5 22.5 37.5 18 48.5 19.5 C 55.5 20.5 60 25.5 59.5 32.5 C 59 38 52.5 40.5 42 41 C 30.5 41.5 23 40.5 23.5 36 Z'/> <g clip-path='url(#ship-cockpit)'> <rect class='s-glint' x='12' y='16' width='7' height='28'/> </g> <circle class='s-window' cx='69' cy='40.5' r='4.2'/> <circle class='s-window' cx='83.5' cy='42' r='4.2'/> <path class='a-suit' d='M 61 54.5 C 71 52 82 52 90 55 C 96 57.5 98.5 61.5 96 64.5 C 93.5 67 85 66.5 74.5 63.5 C 65 61 58 58 61 54.5 Z'/> <circle class='a-blink' cx='20.5' cy='50.5' r='1.8'/> <circle class='a-blink' cx='90.5' cy='60.5' r='1.8'/> <circle class='a-fill' cx='33.5' cy='47.5' r='1.5'/> <circle class='a-fill' cx='34' cy='55.5' r='1.5'/> <circle class='a-fill' cx='93' cy='36.5' r='1.5'/> <circle class='a-fill' cx='92' cy='48' r='1.5'/> <circle class='s-port' cx='46' cy='66' r='3'/> </g> </svg>`;
 
 // ---------- providers & models (all kept in this browser only; never in backups) ----------
 const LS = {
@@ -212,7 +216,7 @@ export function mountTutor(el, { problem, courseName, getImage }) {
     if (!getKey()) { bubble('assistant', `<p>Önce bana bir API anahtarı vermen gerekiyor: <a href="#/settings">Ayarlar → Astronot asistan</a>.</p>`); return; }
     bubble('user', `<p>${esc(label || text)}</p>`);
     const out = bubble('assistant thinking', `<p class="dots"><i></i><i></i><i></i> Nova düşünüyor</p>`);
-    el.querySelector('.astro').classList.add('talking');
+    el.querySelector('.astro').classList.add('talking'); document.body.classList.add('nova-talking');
     let img = null;
     if (el.querySelector('[data-img]').checked) { try { img = (await getImage())?.split(',')[1] || null; } catch { /* board snapshot is optional */ } }
     const q = { role: 'user', text: `[Ders: ${courseName || '-'} · Konu: ${problem.topic || '-'} · Soru: ${problem.title}]\n${text}`, ...(label && { label }) };
@@ -228,11 +232,72 @@ export function mountTutor(el, { problem, courseName, getImage }) {
       if (err?.name === 'AbortError' || err instanceof Anthropic.APIUserAbortError) return;
       out.className = 'msg assistant err'; out.innerHTML = `<p>${esc(friendlyError(err))}</p>`;
     } finally {
-      ctrl = null; el.querySelector('.astro')?.classList.remove('talking');
+      ctrl = null; el.querySelector('.astro')?.classList.remove('talking'); document.body.classList.remove('nova-talking');
     }
   }
   form.onsubmit = e => { e.preventDefault(); const t = ta.value; ta.value = ''; send(t); };
   ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } e.stopPropagation(); };
   el.querySelector('.astro-quick').onclick = e => { const k = e.target.closest('[data-q]')?.dataset.q; if (k) { const a = ACTIONS.find(a => a[0] === k); send(a[2], a[1]); } };
   return () => ctrl?.abort();
+}
+
+// ---------- Nova roaming the top of the board on a tether from her ship ----------
+// Returns a cleanup function. onOpen() is called when Nova or the ship is clicked.
+export function mountRoamer(wrap, onOpen) {
+  const layer = document.createElement('div');
+  layer.className = 'nova-orbit';
+  layer.innerHTML = `<svg class="tether" aria-hidden="true"><path class="tether-line"/><path class="tether-pulse" pathLength="100"/><g class="trail"></g></svg>
+    <button class="nova-ship" aria-label="Nova'nın gemisi — Nova'ya sor" title="Nova'ya sor">${ship()}</button>
+    <button class="nova-roam" aria-label="Nova'ya sor" title="Nova'ya sor">${astronaut('wave')}</button>`;
+  wrap.append(layer);
+  const svg = layer.querySelector('.tether'), line = svg.querySelector('.tether-line'), pulse = svg.querySelector('.tether-pulse'), trailG = svg.querySelector('.trail');
+  const shipBtn = layer.querySelector('.nova-ship'), nova = layer.querySelector('.nova-roam');
+  for (const b of [shipBtn, nova]) b.onclick = () => { nova.classList.remove('hop'); void nova.offsetWidth; nova.classList.add('hop'); onOpen(); };
+  // never get in the way of a stroke that starts on the board
+  const down = () => layer.classList.add('passive'), up = () => layer.classList.remove('passive');
+  wrap.addEventListener('pointerdown', down); addEventListener('pointerup', up);
+
+  const trail = Array.from({ length: 7 }, () => { const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle'); c.setAttribute('r', '1.4'); trailG.append(c); return { c, x: 0, y: 0, a: 0 }; });
+  let raf = 0, last = performance.now(), px = null, py = null, spin = 0, nextFlip = 14, tTrail = 0, ti = 0;
+  const seed = Math.random() * 100;
+
+  function frame(now) {
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const t = now / 1000 + seed, W = layer.clientWidth, H = layer.clientHeight;
+    const sr = shipBtn.getBoundingClientRect(), lr = layer.getBoundingClientRect();
+    const port = [sr.left - lr.left + sr.width * 46 / 160, sr.top - lr.top + sr.height * 66 / 90];
+    const nw = nova.offsetWidth, nh = nova.offsetHeight;
+    let x, y;
+    if (!full()) { x = port[0] - nw - 50; y = port[1] - nh / 2 + 10; }
+    else {
+      // wander the band between the left edge and the ship: two slow sines per axis feel organic
+      const left = 24, right = Math.max(left + 60, sr.left - lr.left - nw - 20), cx = (left + right) / 2, ax = (right - left) / 2;
+      x = cx + ax * (.78 * Math.sin(t * .075) + .22 * Math.sin(t * .23 + 1.3));
+      y = Math.max(8, Math.min(H - nh - 8, H * .42 + (H * .3) * (.7 * Math.sin(t * .17 + .6) + .3 * Math.sin(t * .41))));
+    }
+    const vx = px == null ? 0 : (x - px) / dt; px = x; py = y;
+    if (full()) { nextFlip -= dt; if (nextFlip < 0) { spin = 360; nextFlip = 22 + Math.random() * 18; } }
+    spin = Math.max(0, spin - dt * 260);
+    const tilt = Math.max(-16, Math.min(16, vx * .25)) + Math.sin(t * .9) * 4;
+    nova.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${(tilt + (360 - spin) % 360).toFixed(1)}deg)`;
+
+    // tether: from the ship's port to Nova's backpack, sagging and swaying a little
+    const bx = x + nw * .5, by = y + nh * .56, dist = Math.hypot(bx - port[0], by - port[1]);
+    const mx = (bx + port[0]) / 2 + Math.sin(t * .7) * 12, my = Math.max(by, port[1]) + 16 + dist * .12 + Math.sin(t * 1.1) * 6;
+    const d = `M${port[0].toFixed(1)},${port[1].toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${bx.toFixed(1)},${by.toFixed(1)}`;
+    line.setAttribute('d', d); pulse.setAttribute('d', d);
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    // stardust from Nova's jetpack
+    if (full() && (tTrail += dt) > .35) { tTrail = 0; const p = trail[ti++ % trail.length]; Object.assign(p, { x: bx - Math.sign(vx || 1) * 8, y: by + 6, a: 1 }); }
+    for (const p of trail) { p.a = Math.max(0, p.a - dt * .7); p.y += dt * 6; p.c.setAttribute('cx', p.x.toFixed(1)); p.c.setAttribute('cy', p.y.toFixed(1)); p.c.setAttribute('opacity', p.a.toFixed(2)); }
+    raf = full() ? requestAnimationFrame(frame) : 0;
+  }
+  const start = () => { cancelAnimationFrame(raf); last = performance.now(); raf = requestAnimationFrame(frame); };
+  start(); addEventListener('mp-theme', start); addEventListener('resize', start);
+  return () => {
+    cancelAnimationFrame(raf); layer.remove();
+    wrap.removeEventListener('pointerdown', down); removeEventListener('pointerup', up);
+    removeEventListener('mp-theme', start); removeEventListener('resize', start);
+  };
 }

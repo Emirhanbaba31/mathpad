@@ -4,7 +4,7 @@ import { createBoard, renderTo, COLORS } from './board.js';
 import * as T from './tools.js';
 import { $, $$, esc, modal, confirmBox, toast, icon, logo, download, loadScript } from './ui.js';
 import * as fx from './fx.js';
-import { astronaut, mountTutor, keyCard } from './astro.js';
+import { astronaut, mountTutor, keyCard, mountRoamer } from './astro.js';
 import { mountSky, galaxyCalendar, scopeChart } from './sky.js';
 import * as badges from './badges.js';
 
@@ -588,7 +588,6 @@ async function problem(id) {
         <button class="icon-btn" data-close-side aria-label="Paneli kapat" style="margin-left:auto">${icon('x')}</button></div>
         <div data-pane="nova" hidden></div><div data-pane="calc"></div><div data-pane="fx" class="note" hidden></div>
       </aside>
-      <button class="astro-fab" data-nova aria-label="Astronot asistan Nova'yı aç" title="Nova'ya sor">${astronaut('sm')}</button>
     </div></div>`;
 
   const els = (await db.get('b:' + id)) || [];
@@ -708,7 +707,8 @@ async function problem(id) {
     });
   };
   side.querySelector('.seg').onclick = e => { const t = e.target.closest('[data-tab]')?.dataset.tab; if (t) tab(t); };
-  $('[data-nova]').onclick = () => { side.hidden = false; mountSide(); tab('nova'); $('[data-pane=nova] textarea')?.focus(); };
+  const openNova = () => { side.hidden = false; mountSide(); tab('nova'); $('[data-pane=nova] textarea')?.focus(); };
+  const stopRoam = mountRoamer(wrap, openNova); // Nova floats on a tether from her ship across the top of the board
 
   // focus mode: everything but the board slips away; hyperspace jump in and out
   const focus = on => {
@@ -745,7 +745,7 @@ async function problem(id) {
   }, 1000);
 
   return () => {
-    clearInterval(iv); board.destroy(); persist(); stopTutor?.();
+    clearInterval(iv); board.destroy(); persist(); stopTutor?.(); stopRoam();
     removeEventListener('keydown', focusKey); document.body.classList.remove('focus'); fx.ambience(false);
     document.removeEventListener('paste', onPaste);
     view.removeEventListener('pointerdown', act); removeEventListener('keydown', act);
