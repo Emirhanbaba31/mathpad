@@ -607,7 +607,8 @@ async function settings() {
       <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button></div></div>`
     : `<div class="card pad set"><h3>Uygulama olarak yükle</h3>
       ${standalone ? '<p>Zaten uygulama olarak açıksın ✦</p>' : installEvt ? `<p class="mute">Masaüstüne / ana ekrana ekle, internet olmadan da çalışsın.</p><button class="btn primary" data-act="install">${icon('install')} Yükle</button>`
-      : ios ? '<p class="mute">iPad/iPhone: Safari\'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>.</p>' : '<p class="mute">Tarayıcının adres çubuğundaki <b>yükle</b> simgesine bas (Chrome/Edge). Android\'de menü → <b>Uygulamayı yükle</b>.</p>'}</div>`}
+      : ios ? '<p class="mute">iPad/iPhone: Safari\'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>.</p>' : '<p class="mute">Tarayıcının adres çubuğundaki <b>yükle</b> simgesine bas (Chrome/Edge). Android\'de menü → <b>Uygulamayı yükle</b>.</p>'}
+      ${upd.platform() === 'web' ? '<p class="mute small">Android telefon ve tablet için uygulama: <a href="indir/">MathPad\'i indir</a></p>' : ''}</div>`}
     <div class="card pad set"><h3>Yedekleme</h3>
       ${window.desktop ? `<p class="mute"><b>Otomatik yedek açık:</b> MathPad her gün bir yedeği <b>Belgeler\\MathPad\\Yedekler</b> klasörüne kaydeder, son 7 günü saklar.${S.lastAutoBackup ? ` Son otomatik yedek: ${esc(S.lastAutoBackup)}.` : ''}</p>`
       : `<p class="mute">Verilerin sadece bu cihazda durur. Ara ara yedek al. ${S.lastBackup ? `Son yedeğin: ${daysSince(S.lastBackup) ? daysSince(S.lastBackup) + ' gün önce' : 'bugün'}.` : 'Henüz hiç yedek almadın.'}</p>`}

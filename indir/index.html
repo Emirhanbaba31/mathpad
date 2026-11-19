@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>MathPad'i indir</title>
+<meta name="description" content="MathPad: mühendislik öğrencileri için soru çözme defteri. Android, Windows ve web.">
+<link rel="icon" href="../icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  body { overflow: auto; }
+  .dl { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 48px 16px 64px; }
+  .dl-hero { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .dl-hero .logo { width: 112px; height: 112px; flex: none; }
+  .dl h1 { font-size: clamp(36px, 7vw, 56px); margin: 0; line-height: 1.05; }
+  .dl-lead { font-size: 18px; margin: 8px 0 0; }
+  .dl-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 36px 0; }
+  .dl-cards .card { display: flex; flex-direction: column; gap: 10px; }
+  .dl-cards h3 { margin: 0; }
+  .dl-cards .btn { justify-content: center; margin-top: auto; }
+  .dl-steps { margin: 0; padding-left: 20px; }
+  .dl-steps li { margin: 4px 0; }
+  .dl-addr { font-size: 15px; word-break: break-all; }
+  .dl-shots { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x mandatory; }
+  .dl-shots img { width: 220px; flex: none; border-radius: 18px; border: 1px solid rgba(255,255,255,.12); scroll-snap-align: start; }
+  .only-phone { display: none; }
+  @media (pointer: coarse) { .only-phone { display: block; } .only-desk { display: none; } }
+</style>
+</head>
+<body>
+<div id="space" aria-hidden="true"><i class="neb loop"></i><i class="tw loop"></i><i class="ss loop"></i></div>
+<main class="dl">
+  <div class="dl-hero"><span id="logo"></span>
+    <div><h1>MathPad</h1><p class="dl-lead mute">Soru çöz, sonsuz tahtada çiz, devreni simüle et. Mühendislik öğrencileri için.</p></div></div>
+
+  <div class="dl-cards">
+    <section class="card pad">
+      <h3>Android · telefon ve tablet</h3>
+      <p class="mute small" data-ver>En son sürüm</p>
+      <ol class="dl-steps mute small">
+        <li>Aşağıdaki düğmeyle APK'yı indir.</li>
+        <li>İndirilen dosyayı aç. "Bilinmeyen uygulamalar" uyarısı çıkarsa bu kaynağa izin ver.</li>
+        <li>Güncellemeleri sonra uygulamada Ayarlar → Güncellemeleri denetle ile alırsın.</li>
+      </ol>
+      <a class="btn primary" data-apk href="https://github.com/Emirhanbaba31/mathpad/releases/latest">APK'yı indir</a>
+    </section>
+    <section class="card pad">
+      <h3>Windows</h3>
+      <p class="mute small">Kurulum dosyası. Güncellemeler kendiliğinden gelir.</p>
+      <a class="btn" data-exe href="https://github.com/Emirhanbaba31/mathpad/releases/latest">Windows için indir</a>
+    </section>
+    <section class="card pad">
+      <h3>Web · iPhone ve iPad</h3>
+      <p class="mute small">Kurulum gerekmez. iPhone/iPad'de Safari'de aç, Paylaş → "Ana Ekrana Ekle" de.</p>
+      <a class="btn" href="../">Tarayıcıda aç</a>
+    </section>
+  </div>
+
+  <section class="card pad only-desk" style="margin-bottom:36px">
+    <h3 style="margin-top:0">Telefona kurmak için</h3>
+    <p class="mute small">Telefonunun tarayıcısında bu adresi aç:</p>
+    <p class="dl-addr mono">emirhanbaba31.github.io/mathpad/indir</p>
+  </section>
+
+  <div class="dl-shots" aria-label="Ekran görüntüleri">
+    <img src="panel.png" alt="Panel: günlük hedef, seri ve çalışma süresi" loading="lazy">
+    <img src="tahta.png" alt="Tahtada çözülmüş bir RC devresi sorusu" loading="lazy">
+    <img src="simulasyon.png" alt="Simülasyon merkezi: devre çözücü" loading="lazy">
+  </div>
+  <p class="mute small" style="margin-top:32px"><a href="../privacy.html">Gizlilik politikası</a> · <a href="https://github.com/Emirhanbaba31/mathpad">Kaynak kod</a></p>
+</main>
+<script type="module">
+  import { logo } from '../js/ui.js';
+  document.getElementById('logo').outerHTML = logo();
+  // Point the buttons straight at the newest files; on failure they keep linking to the release page
+  try {
+    const rel = await (await fetch('https://api.github.com/repos/Emirhanbaba31/mathpad/releases/latest')).json();
+    const find = ext => rel.assets?.find(a => a.name.endsWith(ext))?.browser_download_url;
+    if (find('.apk')) document.querySelector('[data-apk]').href = find('.apk');
+    if (find('.exe')) document.querySelector('[data-exe]').href = find('.exe');
+    if (rel.tag_name) document.querySelector('[data-ver]').textContent = 'Sürüm ' + rel.tag_name.replace(/^v/, '');
+  } catch { }
+</script>
+</body>
+</html>

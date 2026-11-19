@@ -18,7 +18,7 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
-    // Upload key for Google Play: the path and password come from scripts/android-release.ps1 (never stored in the repo)
+    // Release signing key: the path and password come from scripts/android-release.ps1 (never stored in the repo)
     signingConfigs {
         release {
             if (System.getenv("MP_KEYSTORE")) {
