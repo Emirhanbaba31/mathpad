@@ -793,3 +793,4 @@ body.focus .pb { grid-template-rows: 1fr; }
   .ccard .planet { width: 90px; height: 90px; }
 }
 html[data-motion="reduced"] :is(.astro *, .scope-beam, .gd.today, .scope-pt.now) { animation: none !important; }
+.astro-model { margin-left: auto; width: auto; max-width: 170px; height: 32px; padding: 0 8px; font-size: 12px; }
