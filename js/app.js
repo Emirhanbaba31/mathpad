@@ -500,10 +500,7 @@ function home() {
   let dead = false, stopSolar = null;
   const solarHost = $('[data-solar-preview]');
   if (solarHost) {
-    import('./solar.js').then(({ mountSolar }) => {
-      if (dead || !solarHost.isConnected) return;
-      stopSolar = mountSolar(solarHost, { preview: true });
-    }).catch(() => {});
+    mountSolarAny(solarHost, { preview: true }).then(stop => { if (dead) stop?.(); else stopSolar = stop; }).catch(() => {});
   }
   return () => { dead = true; stopSky?.(); stopSolar?.(); };
 }
@@ -623,14 +620,19 @@ async function sim(id) {
   return mountSim($('[data-sim]'), cur.id);
 }
 
+// WebGL renderer when the device supports it, canvas 2D version otherwise; both load on demand
+async function mountSolarAny(host, opts) {
+  try { const stop = (await import('./solar3d.js')).mountSolar3D(host, opts); if (stop) return stop; } catch (err) { console.warn('WebGL Güneş Sistemi açılamadı', err); }
+  if (!host.isConnected) return null;
+  return (await import('./solar.js')).mountSolar(host, opts);
+}
 // Interactive 3D Solar System view (#/evren), loaded on demand so startup stays fast
 async function solar() {
-  const { mountSolar } = await import('./solar.js');
-  if (route_()[0] !== 'evren') return;
+  view.innerHTML = `<div class="solar-page" data-solar-stage></div>`;
   const prevTitle = document.title;
   document.title = 'Güneş Sistemi · MathPad';
-  view.innerHTML = `<div class="solar-page" data-solar-stage></div>`;
-  const stop = mountSolar($('[data-solar-stage]'), { preview: false });
+  const stop = await mountSolarAny($('[data-solar-stage]'), { preview: false });
+  if (route_()[0] !== 'evren') { stop?.(); return; }
   return () => { document.title = prevTitle; stop?.(); };
 }
 

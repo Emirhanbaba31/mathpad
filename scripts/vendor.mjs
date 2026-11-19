@@ -21,6 +21,18 @@ copy('jspdf/dist/jspdf.umd.min.js', 'jspdf.umd.min.js');
 // Anthropic SDK (for the astronaut tutor) bundled into one browser ES module
 import { buildSync } from 'esbuild';
 buildSync({ entryPoints: [nm('@anthropic-ai/sdk/index.mjs')], bundle: true, format: 'esm', minify: true, platform: 'browser', outfile: join(out, 'anthropic.mjs'), logLevel: 'error' });
+// three.js + bloom post-processing (WebGL solar system) as one browser ES module
+buildSync({
+  stdin: {
+    contents: `export * from 'three';
+export { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+export { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+export { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+export { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';`,
+    resolveDir: process.cwd(),
+  },
+  bundle: true, format: 'esm', minify: true, platform: 'browser', outfile: join(out, 'three.mjs'), logLevel: 'error',
+});
 
 // Fonts: only latin + latin-ext (Turkish) woff2 files, one stylesheet.
 const fonts = [['space-grotesk', 'Space Grotesk', [400, 500, 600, 700]], ['jetbrains-mono', 'JetBrains Mono', [400, 500]]];

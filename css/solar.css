@@ -724,3 +724,15 @@ html[data-motion="off"] .solar-hint {
   transition: none !important;
   animation: none !important;
 }
+
+/* ---------- WebGL renderer (js/solar3d.js): HTML planet labels over the canvas ---------- */
+.solar3d-labels { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.solar3d-label {
+  position: absolute; left: 0; top: 0; pointer-events: auto; white-space: nowrap; cursor: pointer;
+  padding: 2px 9px; border-radius: 99px; border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(0, 0, 0, .38); color: rgba(255, 255, 255, .78); font: 500 11.5px var(--font);
+  backdrop-filter: blur(4px); transition: opacity .25s, border-color .2s, color .2s;
+}
+.solar3d-label:hover, .solar3d-label.on { color: #fff; border-color: rgba(255, 255, 255, .5); }
+.solar3d-label.course i { font-style: normal; margin-right: 5px; }
+html[data-motion="off"] .solar3d-label { transition: none; }

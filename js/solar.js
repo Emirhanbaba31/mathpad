@@ -2803,3 +2803,6 @@ export function mountSolar(container, options = {}) {
     ptrs.clear();
   };
 }
+
+// shared with the WebGL renderer (js/solar3d.js)
+export { SUN_DEF, PLANET_DEFS, SPEEDS, ICONS, buildCourseMap, makeRng, fbm3 };
