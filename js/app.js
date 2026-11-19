@@ -11,6 +11,7 @@ import { SHAPE_NAMES } from './shapes.js';
 import * as badges from './badges.js';
 import * as sync from './sync.js';
 import * as upd from './update.js';
+import { PLANET_THEMES, currentPlanet, setPlanetTheme, mountPlanetBackdrop } from './planets.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
@@ -263,12 +264,24 @@ async function compressPhotos() {
   }
   return { saved, count };
 }
+function planetThemeOf(id) {
+  return PLANET_THEMES.find(p => p.id === id) || PLANET_THEMES.find(p => p.id === 'earth') || PLANET_THEMES[0];
+}
+function hasCustomAccent(pid) {
+  return !!S.settings.accent && (
+    S.settings.customAccentFor === pid ||
+    (S.settings.customAccentFor === undefined && S.settings.planet === undefined)
+  );
+}
 function applyPrefs() {
   const h = document.documentElement;
   h.dataset.motion = S.settings.motion || 'full';
   h.dataset.sound = S.settings.sound || 'off';
   h.dataset.theme = S.settings.theme || 'space';
-  h.style.setProperty('--acc', S.settings.accent || (h.dataset.theme === 'aurora' ? '#7cf5c8' : '#f4f4f5'));
+  const pid = currentPlanet();
+  h.dataset.planet = pid;
+  h.style.setProperty('--acc', hasCustomAccent(pid) ? S.settings.accent : planetThemeOf(pid).accent);
+  mountPlanetBackdrop();
   dispatchEvent(new Event('mp-theme'));
 }
 const THEMES = [['space', 'Derin Uzay'], ['paper', 'Kağıt'], ['night', 'Gece Gözlem'], ['aurora', 'Aurora']];
@@ -641,6 +654,7 @@ async function settings() {
   const persisted = await navigator.storage?.persisted?.().catch(() => false);
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = matchMedia('(display-mode: standalone)').matches;
+  const curP = currentPlanet(), pTheme = planetThemeOf(curP), customAcc = hasCustomAccent(curP);
   view.innerHTML = `<div class="page narrow"><header class="page-h"><div><p class="eyebrow">Ayarlar</p><h1>Ayarlar</h1></div></header>
     <div class="card pad set"><h3>Sürüm</h3><div class="row wrap"><p class="mute" style="margin:0">MathPad ${upd.VERSION} · ${{ desktop: 'Windows', android: 'Android', web: 'Web' }[upd.platform()]}</p><button class="btn" data-upcheck>${icon('rotate')} Güncellemeleri denetle</button></div></div>
     <div class="card pad set"><h3>Günlük hedef</h3><p class="mute">Panelde her gün kaç soru çözmeyi hedeflediğin.</p>
@@ -648,7 +662,15 @@ async function settings() {
     <div class="card pad set"><h3>Görünüm ve ses</h3>
       <div class="set-row"><span>Hareket ve animasyonlar</span><div class="seg" data-pref="motion">${[['full', 'Tam'], ['reduced', 'Azaltılmış'], ['off', 'Kapalı']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.motion || 'full') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
       <div class="set-row"><span>Tema</span><div class="seg" data-theme-pick>${THEMES.map(([k, l]) => `<button data-v="${k}" class="${(S.settings.theme || 'space') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
-      <div class="set-row"><span>Vurgu rengi <small class="mute">(halkalar, ilerleme, ışıklar)</small></span><div class="pick" data-accent>${ACCENTS.map(a => `<button class="pick-c ${(S.settings.accent || '#f4f4f5') === a ? 'on' : ''}" style="--cc:${a}" data-v="${a}" aria-label="Vurgu ${a}"><span></span></button>`).join('')}</div></div>
+      <div class="set-row set-planets">
+        <div class="pl-set-head">
+          <div><span>Gezegen teması</span><small class="mute pl-tagline" data-planet-tag>${esc(pTheme.tagline)}</small></div>
+          <a class="link small pl-explore" href="#/evren">${solarIcon()} Güneş Sistemi'nde keşfet</a>
+        </div>
+        <div class="planet-strip" data-planet-pick role="group" aria-label="Gezegen teması">${PLANET_THEMES.map(p => `<button type="button" class="planet-chip ${curP === p.id ? 'on' : ''}" data-p="${p.id}" style="--pc:${p.accent}" aria-pressed="${curP === p.id}"><span class="pl-orb pl-orb-${p.id}" aria-hidden="true"></span><span class="pl-chip-name">${esc(p.name)}</span></button>`).join('')}</div>
+        <small class="mute pl-mode-note">Kağıt ve Gece Gözlem temalarında yalnızca vurgu rengi uygulanır.</small>
+      </div>
+      <div class="set-row"><span>Vurgu rengi <small class="mute">(halkalar, ilerleme, ışıklar)</small></span><div class="pick" data-accent><button type="button" class="pick-c pick-planet ${!customAcc ? 'on' : ''}" style="--cc:${pTheme.accent}" data-v="planet" title="Gezegen rengi (${esc(pTheme.name)})" aria-label="Gezegen rengi"><span></span></button>${ACCENTS.map(a => `<button type="button" class="pick-c ${customAcc && S.settings.accent === a ? 'on' : ''}" style="--cc:${a}" data-v="${a}" aria-label="Vurgu ${a}"><span></span></button>`).join('')}</div></div>
       <div class="set-row"><span>Efekt sesleri <small class="mute">(çözüldü, hedef)</small></span><div class="seg" data-pref="sound">${[['off', 'Kapalı'], ['on', 'Açık']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.sound || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div></div>
     <div class="card pad set" data-gd></div>
     <div class="card pad set" data-ai></div>
@@ -672,22 +694,61 @@ async function settings() {
     <div class="card pad set danger-zone"><h3>Tüm verileri sil</h3><p class="mute">Bütün dersler, sorular ve istatistikler silinir. Geri alınamaz.</p><button class="btn danger" data-wipe>${icon('trash')} Her şeyi sil</button></div>
     ${window.desktop ? `<div class="card pad set danger-zone uninstall-card" id="kaldir"><h3>${icon('trash')} MathPad'i bilgisayardan kaldır</h3>
       <ol class="mute steps"><li>İstersen önce <button type="button" class="link" data-prebackup>yedek al</button>.</li><li>Aşağıdaki düğmeye bas; MathPad kapanır ve kaldırma penceresi açılır.</li><li>Verilerini de silmek isteyip istemediğin sorulur. <b>Hayır</b> dersen tekrar kurduğunda kaldığın yerden devam edersin.</li></ol>
-      <button class="btn danger" data-uninstall>${icon('trash')} MathPad'i kaldır</button></div>` : ''}</div>`;
+      <button class="btn danger" data-uninstall>${icon('trash')} MathPad'i kaldır</button></div>` : ''}
+    <p class="mute small pl-credit">Dokular: <a class="link" href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener">Solar System Scope (CC BY 4.0)</a></p></div>`;
   $('[data-goal]').onchange = e => { S.settings.goal = Math.max(1, +e.target.value || 10); persist(); toast('Hedef kaydedildi'); };
   $('[data-backup]').onclick = async () => { await backupNow(); toast('Yedek indirildi ✦'); };
   $('[data-backups]')?.addEventListener('click', () => desktop.openBackups());
   renderTrash($('[data-trash]'));
   keyCard($('[data-ai]'));
   gdCard($('[data-gd]'));
+  const syncPlanetUI = () => {
+    const pid = currentPlanet(), pt = planetThemeOf(pid), isCustom = hasCustomAccent(pid);
+    $$('[data-planet-pick] [data-p]').forEach(b => {
+      const on = b.dataset.p === pid;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    const tag = $('[data-planet-tag]');
+    if (tag) tag.textContent = pt.tagline;
+    const pBtn = $('[data-accent] [data-v="planet"]');
+    if (pBtn) {
+      pBtn.style.setProperty('--cc', pt.accent);
+      pBtn.title = `Gezegen rengi (${pt.name})`;
+    }
+    $$('[data-accent] button').forEach(b => {
+      b.classList.toggle('on', b.dataset.v === 'planet' ? !isCustom : (isCustom && S.settings.accent === b.dataset.v));
+    });
+  };
+  const strip = $('[data-planet-pick]'), activeChip = strip?.querySelector('.on');
+  if (strip && activeChip && strip.scrollWidth > strip.clientWidth + 4) {
+    const sr = strip.getBoundingClientRect(), ar = activeChip.getBoundingClientRect();
+    strip.scrollLeft = Math.max(0, strip.scrollLeft + (ar.left - sr.left) - (strip.clientWidth - ar.width) / 2);
+  }
+  $('[data-planet-pick]').onclick = e => {
+    const p = e.target.closest('[data-p]')?.dataset.p; if (!p) return;
+    setPlanetTheme(p);
+    syncPlanetUI();
+  };
+  const onPlanetEvt = () => strip?.isConnected ? syncPlanetUI() : removeEventListener('mp-planet', onPlanetEvt); // drops itself after leaving Settings
+  addEventListener('mp-planet', onPlanetEvt);
   $('[data-theme-pick]').onclick = e => {
     const v = e.target.closest('[data-v]')?.dataset.v; if (!v || v === (S.settings.theme || 'space')) return;
     $$('[data-theme-pick] button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
-    fx.scan(() => { S.settings.theme = v; if (v === 'aurora' && !S.settings.accent) S.settings.accent = '#7cf5c8'; persist(); applyPrefs(); });
+    fx.scan(() => { S.settings.theme = v; persist(); applyPrefs(); });
   };
   $('[data-accent]').onclick = e => {
     const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
-    S.settings.accent = v; persist(); applyPrefs();
-    $$('[data-accent] button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    const pid = currentPlanet();
+    if (v === 'planet') {
+      S.settings.customAccentFor = null;
+      delete S.settings.accent;
+    } else {
+      S.settings.planet = pid;
+      S.settings.accent = v;
+      S.settings.customAccentFor = pid;
+    }
+    persist(); applyPrefs(); syncPlanetUI();
   };
   renderStorage($('[data-storage]'), est, persisted);
   $('[data-restore]').onchange = async e => { const f = e.target.files[0]; if (f) restoreBackup(f.name, await f.text()); };
@@ -716,6 +777,7 @@ async function settings() {
     if (!await confirmBox('Her şey silinsin mi?', 'Tüm dersler, sorular, çizimler ve istatistikler kalıcı olarak silinecek.', 'Evet, sil')) return;
     await db.replaceAll([]); location.hash = '#/'; location.reload();
   };
+  return () => removeEventListener('mp-planet', syncPlanetUI);
 }
 
 function notFound() { view.innerHTML = `<div class="page"><div class="empty card pad"><p>Bulunamadı.</p><a class="btn" href="#/">Panele dön</a></div></div>`; }

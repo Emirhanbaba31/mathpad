@@ -1,7 +1,7 @@
 {
   "name": "mathpad",
   "productName": "MathPad",
-  "version": "1.8.7",
+  "version": "1.9.0",
   "description": "Mühendislik öğrencileri için soru çözme defteri",
   "author": "MathPad",
   "license": "UNLICENSED",
@@ -50,6 +50,7 @@
       "js/**",
       "icons/**",
       "vendor/**",
+      "textures/**",
       "electron/**"
     ],
     "win": {

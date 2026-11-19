@@ -1,0 +1,1770 @@
+/* =====================================================================
+   MathPad Planet Themes — per-planet colour palettes, real-texture
+   celestial backdrops, GPU-friendly ambient effects, and Settings UI.
+   Linked right after css/app.css; texture URLs resolve via ../textures/.
+   ===================================================================== */
+
+/* ---------- Default planet tokens (Earth) ---------- */
+:root {
+  --pl-glow: #3fa2ff;
+  --pl-tint: #62beff;
+  --pl-rim: #8cd4ff;
+  --neb-a: rgba(56, 152, 255, .10);
+  --neb-b: rgba(88, 232, 184, .065);
+  --pl-wave: rgba(63, 162, 255, .30);
+}
+
+/* ---------- Per-planet colour systems (WCAG AA+ accents) ---------- */
+html[data-planet="mercury"] {
+  --pl-glow: #ffe3b3;
+  --pl-tint: #e7d9c2;
+  --pl-rim: #fff2d6;
+  --neb-a: rgba(255, 224, 170, .085);
+  --neb-b: rgba(182, 176, 168, .055);
+  --pl-wave: rgba(246, 225, 185, .28);
+}
+
+html[data-planet="venus"] {
+  --pl-glow: #f5b841;
+  --pl-tint: #f3ca6b;
+  --pl-rim: #ffe4a1;
+  --neb-a: rgba(245, 185, 70, .105);
+  --neb-b: rgba(196, 118, 45, .07);
+  --pl-wave: rgba(246, 198, 96, .30);
+}
+
+html[data-planet="earth"] {
+  --pl-glow: #3fa2ff;
+  --pl-tint: #62beff;
+  --pl-rim: #92d8ff;
+  --neb-a: rgba(56, 152, 255, .10);
+  --neb-b: rgba(88, 232, 184, .065);
+  --pl-wave: rgba(78, 180, 255, .30);
+}
+
+html[data-planet="mars"] {
+  --pl-glow: #e8562a;
+  --pl-tint: #f07449;
+  --pl-rim: #ffae88;
+  --neb-a: rgba(232, 82, 38, .105);
+  --neb-b: rgba(164, 58, 34, .068);
+  --pl-wave: rgba(242, 112, 68, .30);
+}
+
+html[data-planet="jupiter"] {
+  --pl-glow: #e08d4f;
+  --pl-tint: #ebb078;
+  --pl-rim: #ffd7ad;
+  --neb-a: rgba(226, 146, 82, .10);
+  --neb-b: rgba(164, 108, 72, .07);
+  --pl-wave: rgba(235, 162, 102, .30);
+}
+
+html[data-planet="saturn"] {
+  --pl-glow: #dfc072;
+  --pl-tint: #ebd596;
+  --pl-rim: #fff0c2;
+  --neb-a: rgba(232, 200, 118, .095);
+  --neb-b: rgba(176, 166, 198, .06);
+  --pl-wave: rgba(236, 208, 134, .28);
+}
+
+html[data-planet="uranus"] {
+  --pl-glow: #4ad8e8;
+  --pl-tint: #74e9f4;
+  --pl-rim: #bcf8ff;
+  --neb-a: rgba(84, 224, 238, .10);
+  --neb-b: rgba(116, 164, 255, .068);
+  --pl-wave: rgba(96, 228, 242, .30);
+}
+
+html[data-planet="neptune"] {
+  --pl-glow: #2d6bff;
+  --pl-tint: #5d97ff;
+  --pl-rim: #99c2ff;
+  --neb-a: rgba(45, 102, 255, .13);
+  --neb-b: rgba(86, 178, 255, .075);
+  --pl-wave: rgba(74, 132, 255, .32);
+}
+
+html[data-planet="sun"] {
+  --pl-glow: #ff7a18;
+  --pl-tint: #ffaa3b;
+  --pl-rim: #ffe08a;
+  --neb-a: rgba(255, 128, 28, .115);
+  --neb-b: rgba(255, 68, 20, .068);
+  --pl-wave: rgba(255, 152, 46, .34);
+}
+
+/* ---------- UI colour & atmosphere integration (space + aurora only) ---------- */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) ::selection {
+  background: color-mix(in srgb, var(--acc) 36%, transparent);
+  color: #fff;
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) :focus-visible {
+  outline-color: var(--acc);
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .inp:focus {
+  border-color: color-mix(in srgb, var(--acc) 78%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 18%, transparent);
+}
+
+/* Remove the legacy monochrome corner ring from #space so real planets shine cleanly */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) #space {
+  background-image: var(--s2), var(--s1);
+}
+
+/* Nebula colours follow the active planet on Deep Space */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]):not([data-theme="aurora"]) #space .neb {
+  background:
+    radial-gradient(ellipse 46% 34% at 76% 26%, var(--neb-a), transparent 70%),
+    radial-gradient(ellipse 42% 30% at 20% 78%, var(--neb-b), transparent 70%),
+    radial-gradient(ellipse 50% 24% at 50% 100%, color-mix(in srgb, var(--pl-glow) 6%, transparent), transparent 68%);
+  transition: opacity .6s var(--ease-out);
+}
+
+/* Aurora base theme blends its signature curtains with the active planet's hue */
+html[data-planet][data-theme="aurora"] #space .neb {
+  background:
+    radial-gradient(ellipse 50% 22% at 30% 18%, rgba(110, 255, 200, .09), transparent 70%),
+    radial-gradient(ellipse 48% 28% at 76% 30%, var(--neb-a), transparent 70%),
+    radial-gradient(ellipse 60% 22% at 48% 84%, var(--neb-b), transparent 70%);
+}
+
+/* Subtle planet-tinted cards, high-contrast surfaces */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .card,
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .pcard {
+  background: color-mix(in srgb, var(--pl-tint) 3%, rgba(12, 12, 16, .84));
+  border-color: color-mix(in srgb, var(--pl-tint) 16%, var(--line));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pl-tint) 12%, rgba(255, 255, 255, .05));
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .card::before,
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .pcard::before {
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--acc) 58%, rgba(255, 255, 255, .52)),
+    transparent 60%
+  );
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .card::after,
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .pcard::after {
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    color-mix(in srgb, var(--pl-glow) 8%, rgba(255, 255, 255, .03)),
+    transparent 45%
+  );
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .ccard:hover,
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .pcard:hover {
+  border-color: color-mix(in srgb, var(--pl-tint) 34%, var(--line-2));
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, .42),
+    0 0 22px color-mix(in srgb, var(--pl-glow) 11%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--pl-tint) 20%, rgba(255, 255, 255, .08));
+}
+
+/* Progress bars & goal rings get a richer planet-tinted glow */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .progress i {
+  box-shadow: 0 0 14px color-mix(in srgb, var(--bar-c, var(--pl-glow)) 58%, transparent);
+}
+
+/* Logo ring, glow & moon tinted subtly by the planet */
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .lg-glow {
+  fill: var(--pl-glow);
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .lg-ring {
+  stroke: color-mix(in srgb, var(--pl-tint) 36%, rgba(255, 255, 255, .34));
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .lg-ring-front {
+  stroke: color-mix(in srgb, var(--pl-tint) 42%, rgba(255, 255, 255, .74));
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .lg-ring-run {
+  stroke: var(--acc);
+  filter: drop-shadow(0 0 3px var(--pl-glow));
+}
+
+html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .lg-moon {
+  fill: var(--acc);
+  filter: drop-shadow(0 0 3px var(--pl-glow));
+}
+
+/* Sidebar & phone dock accent highlights */
+@media (min-width: 821px) {
+  html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .side {
+    border-right-color: color-mix(in srgb, var(--pl-tint) 16%, var(--line));
+  }
+
+  html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) mp-ind.nav-ind {
+    background: color-mix(in srgb, var(--acc) 10%, rgba(255, 255, 255, .06));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 22%, rgba(255, 255, 255, .06));
+  }
+}
+
+@media (max-width: 820px) {
+  html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .side {
+    border-color: color-mix(in srgb, var(--pl-tint) 22%, rgba(255, 255, 255, .12));
+    box-shadow:
+      0 14px 38px rgba(0, 0, 0, .74),
+      0 0 26px color-mix(in srgb, var(--pl-glow) 15%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--pl-tint) 18%, rgba(255, 255, 255, .08));
+  }
+
+  html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) mp-ind.nav-ind {
+    background: color-mix(in srgb, var(--acc) 15%, rgba(255, 255, 255, .07));
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--acc) 32%, rgba(255, 255, 255, .12)),
+      0 0 20px color-mix(in srgb, var(--pl-glow) 24%, transparent);
+  }
+
+  html[data-planet]:not([data-theme="paper"]):not([data-theme="night"]) .slim-bar {
+    border-bottom-color: color-mix(in srgb, var(--pl-tint) 18%, rgba(255, 255, 255, .1));
+  }
+}
+
+/* =====================================================================
+   #space Planet Backdrop Stage
+   ===================================================================== */
+#space .pl-stage {
+  position: absolute;
+  inset: 10px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+  isolation: isolate;
+  transition: opacity .35s var(--ease-out);
+}
+
+body.desktop #space .pl-stage {
+  top: 0;
+}
+
+html:is([data-theme="paper"], [data-theme="night"]) #space .pl-stage {
+  display: none !important;
+}
+
+/* Board page: whisper-subtle static silhouette so drawing stays front & centre */
+body[data-page="p"] #space .pl-stage {
+  opacity: .22;
+}
+
+body[data-page="p"] #space .pl-ambient {
+  display: none;
+}
+
+body[data-page="p"] #space .pl-stage,
+body[data-page="p"] #space .pl-stage * {
+  animation-play-state: paused !important;
+}
+
+body.focus #space .pl-stage {
+  opacity: 0;
+}
+
+/* 3D Solar System view has its own full-screen WebGL canvas; pause backdrop behind it */
+body[data-page="evren"] #space .pl-stage {
+  visibility: hidden;
+}
+
+body[data-page="evren"] #space .pl-stage,
+body[data-page="evren"] #space .pl-stage * {
+  animation-play-state: paused !important;
+}
+
+/* Subtle Milky Way dust band across deep space */
+.pl-milky {
+  position: absolute;
+  inset: -12%;
+  display: block;
+  pointer-events: none;
+  background: url("../textures/2k_stars_milky_way.jpg") center / cover no-repeat;
+  opacity: .11;
+  mix-blend-mode: screen;
+  transform: rotate(-14deg) scale(1.12);
+  -webkit-mask-image: radial-gradient(ellipse 84% 66% at 50% 48%, #000 18%, rgba(0, 0, 0, .45) 62%, transparent 96%);
+  mask-image: radial-gradient(ellipse 84% 66% at 50% 48%, #000 18%, rgba(0, 0, 0, .45) 62%, transparent 96%);
+}
+
+/* World container (one active; briefly two during transitions) */
+.pl-world {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  --exit-x: 16vmin;
+  --exit-y: 16vmin;
+  --enter-x: 18vmin;
+  --enter-y: 18vmin;
+}
+
+.pl-world.is-leaving {
+  transition: transform 540ms var(--ease-warp), opacity 460ms ease;
+  transform: translate3d(var(--exit-x), var(--exit-y), 0) scale(.92);
+  opacity: 0;
+}
+
+.pl-world.is-entering {
+  transform: translate3d(var(--enter-x), var(--enter-y), 0) scale(.91);
+  opacity: 0;
+}
+
+.pl-world.is-entering.is-arrived {
+  transition: transform 860ms cubic-bezier(.16, 1, .3, 1), opacity 620ms var(--ease-out);
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
+}
+
+/* Reduced-motion gentle crossfade */
+.pl-world.is-fading-in {
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.pl-world.is-fading-in.is-settled {
+  opacity: 1;
+}
+
+.pl-world.is-fading-out {
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+/* ---------- Shared Planet Sphere Construction ---------- */
+.pl-planet-wrap {
+  position: absolute;
+  width: var(--sz, 64vmin);
+  height: var(--sz, 64vmin);
+  pointer-events: none;
+  opacity: var(--pl-op, .38);
+}
+
+.pl-atmo {
+  position: absolute;
+  inset: -16%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--sun-x, 26%) var(--sun-y, 24%),
+    color-mix(in srgb, var(--p-glow, var(--pl-glow)) 38%, transparent) 34%,
+    color-mix(in srgb, var(--p-glow, var(--pl-glow)) 14%, transparent) 55%,
+    transparent 72%
+  );
+  opacity: .88;
+}
+
+.pl-sphere {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(circle at var(--sun-x, 26%) var(--sun-y, 24%), var(--p-base-lit, #1f2a3a), var(--p-base-dark, #030408) 74%);
+  box-shadow:
+    0 0 6vmin color-mix(in srgb, var(--p-glow, var(--pl-glow)) 30%, transparent),
+    0 0 18vmin color-mix(in srgb, var(--p-glow, var(--pl-glow)) 14%, transparent);
+}
+
+.pl-tex,
+.pl-clouds,
+.pl-night,
+.pl-shade,
+.pl-rim {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Exact 2:1 equirectangular mapping: background-size 200% 100% makes
+   delta background-position-x = +-200% equal to one exact 360deg seamless loop. */
+.pl-tex {
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  background-position: var(--px0, 0%) 50%;
+  animation: pl-spin var(--spin-dur, 130s) linear infinite;
+  will-change: background-position;
+}
+
+@keyframes pl-spin {
+  from { background-position-x: var(--px0, 0%); }
+  to   { background-position-x: var(--px1, -200%); }
+}
+
+.pl-shade {
+  inset: -1px;
+  background: radial-gradient(
+    circle at var(--sun-x, 26%) var(--sun-y, 24%),
+    rgba(255, 255, 255, .08) 0%,
+    transparent 33%,
+    rgba(2, 4, 10, .48) 54%,
+    rgba(1, 2, 6, .88) 72%,
+    rgba(0, 0, 2, .97) 88%
+  );
+  box-shadow:
+    inset calc(var(--sh-x, -1) * 9vmin) calc(var(--sh-y, -1) * 7.5vmin) 15vmin rgba(0, 0, 0, .86),
+    inset calc(var(--sh-x, -1) * -1.4vmin) calc(var(--sh-y, -1) * -1.1vmin) 3.2vmin color-mix(in srgb, var(--p-rim, var(--pl-rim)) 58%, transparent);
+}
+
+.pl-rim {
+  box-shadow:
+    inset calc(var(--sh-x, -1) * -0.45vmin) calc(var(--sh-y, -1) * -0.45vmin) 1.5vmin color-mix(in srgb, var(--p-rim, var(--pl-rim)) 75%, #fff),
+    inset 0 0 .8vmin rgba(255, 255, 255, .14);
+  opacity: .72;
+}
+
+/* Ambient container */
+.pl-ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pl-p {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* =====================================================================
+   Individual Planet Backdrops & Ambient Choreography
+   ===================================================================== */
+
+/* ---------- 1. MERCURY: scorched top-right limb, solar glare, heat shimmer ---------- */
+.pl-world[data-p="mercury"] {
+  --exit-x: 16vmin;
+  --exit-y: -16vmin;
+  --enter-x: 20vmin;
+  --enter-y: -20vmin;
+}
+
+.pl-world[data-p="mercury"] .pl-planet-wrap {
+  --sz: 58vmin;
+  --pl-op: .40;
+  --p-glow: #ffe3b3;
+  --p-rim: #fff4dc;
+  --p-base-lit: #6e675e;
+  --p-base-dark: #070606;
+  --sun-x: 78%;
+  --sun-y: 18%;
+  --sh-x: 1;
+  --sh-y: -1;
+  top: -22vmin;
+  right: -16vmin;
+}
+
+.pl-world[data-p="mercury"] .pl-tex {
+  background-image: url("../textures/2k_mercury.jpg");
+  --px0: 24%;
+  --px1: -176%;
+  --spin-dur: 190s;
+}
+
+/* Harsh airless terminator */
+.pl-world[data-p="mercury"] .pl-shade {
+  background: radial-gradient(
+    circle at 80% 18%,
+    rgba(255, 248, 232, .16) 0%,
+    transparent 30%,
+    rgba(6, 5, 4, .65) 48%,
+    rgba(2, 2, 2, .94) 64%,
+    rgba(0, 0, 0, .99) 82%
+  );
+}
+
+.pl-sun-glare {
+  position: absolute;
+  top: -18vmin;
+  right: -18vmin;
+  width: 62vmin;
+  height: 62vmin;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 72% 28%, rgba(255, 245, 220, .34) 0%, rgba(255, 212, 138, .15) 26%, rgba(255, 180, 90, .05) 50%, transparent 72%);
+  animation: pl-glare-pulse 9s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.pl-sun-glare::after {
+  content: "";
+  position: absolute;
+  top: 26%;
+  right: -10%;
+  width: 115%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 240, 200, .34) 55%, rgba(255, 255, 255, .5) 85%, transparent);
+  transform: rotate(-28deg);
+  opacity: .55;
+}
+
+@keyframes pl-glare-pulse {
+  from { transform: scale(.96); opacity: .78; }
+  to   { transform: scale(1.06); opacity: 1; }
+}
+
+.pl-shimmer {
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 24px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, rgba(255, 232, 184, .22) 50%, transparent);
+  opacity: 0;
+  animation: pl-shimmer var(--d) ease-in-out var(--dl) infinite;
+}
+
+@keyframes pl-shimmer {
+  0%, 100% { opacity: 0; transform: translate3d(0, 10px, 0) scaleY(.7) skewX(-14deg); }
+  50%      { opacity: var(--op); transform: translate3d(-18px, -12px, 0) scaleY(1.35) skewX(-6deg); }
+}
+
+.pl-mglint {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #fff2d6;
+  box-shadow: 0 0 6px rgba(255, 224, 160, .65);
+  opacity: 0;
+  animation: pl-drift-fade var(--d) linear var(--dl) infinite;
+}
+
+/* ---------- 2. VENUS: lower-left veiled amber giant, retrograde spin, sulphur haze ---------- */
+.pl-world[data-p="venus"] {
+  --exit-x: -18vmin;
+  --exit-y: 16vmin;
+  --enter-x: -20vmin;
+  --enter-y: 20vmin;
+}
+
+.pl-world[data-p="venus"] .pl-planet-wrap {
+  --sz: 64vmin;
+  --pl-op: .34;
+  --p-glow: #f5b841;
+  --p-rim: #ffe5a6;
+  --p-base-lit: #8a6428;
+  --p-base-dark: #0c0702;
+  --sun-x: 72%;
+  --sun-y: 22%;
+  --sh-x: 1;
+  --sh-y: -1;
+  bottom: -26vmin;
+  left: -14vmin;
+}
+
+/* Retrograde rotation: px1 = px0 + 200% */
+.pl-world[data-p="venus"] .pl-tex {
+  background-image: url("../textures/2k_venus_atmosphere.jpg");
+  --px0: 18%;
+  --px1: 218%;
+  --spin-dur: 165s;
+}
+
+.pl-haze {
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 18vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(246, 196, 88, .28), rgba(215, 134, 48, .10) 52%, transparent 74%);
+  opacity: 0;
+  animation: pl-haze var(--d) ease-in-out var(--dl) infinite;
+}
+
+@keyframes pl-haze {
+  0%, 100% { opacity: 0; transform: translate3d(-6vw, 8px, 0) scaleX(.92); }
+  50%      { opacity: var(--op); transform: translate3d(8vw, -10px, 0) scaleX(1.12); }
+}
+
+.pl-vmote {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #fde09b;
+  box-shadow: 0 0 8px rgba(245, 184, 65, .55);
+  opacity: 0;
+  animation: pl-drift-fade var(--d) ease-in-out var(--dl) infinite;
+}
+
+/* ---------- 3. EARTH (DEFAULT): blue marble, clouds, night city lights, Moon, aurora ---------- */
+.pl-world[data-p="earth"] {
+  --exit-x: 18vmin;
+  --exit-y: 18vmin;
+  --enter-x: 20vmin;
+  --enter-y: 22vmin;
+}
+
+.pl-world[data-p="earth"] .pl-planet-wrap {
+  --sz: 66vmin;
+  --pl-op: .44;
+  --p-glow: #3fa2ff;
+  --p-rim: #9be0ff;
+  --p-base-lit: #15437d;
+  --p-base-dark: #02050d;
+  --sun-x: 24%;
+  --sun-y: 22%;
+  --sh-x: -1;
+  --sh-y: -1;
+  bottom: -24vmin;
+  right: -17vmin;
+  transform: rotate(-14deg);
+}
+
+.pl-world[data-p="earth"] .pl-tex {
+  background-image: url("../textures/2k_earth_daymap.jpg");
+  --px0: 76%;
+  --px1: -124%;
+  --spin-dur: 132s;
+  opacity: .84;
+}
+
+.pl-world[data-p="earth"] .pl-clouds {
+  background-image: url("../textures/2k_earth_clouds.jpg");
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  --px0: 52%;
+  --px1: -148%;
+  background-position: var(--px0) 50%;
+  mix-blend-mode: screen;
+  opacity: .42;
+  animation: pl-spin 108s linear infinite;
+  will-change: background-position;
+}
+
+/* City lights locked to Earth's continents, masked cleanly onto the night side */
+.pl-world[data-p="earth"] .pl-night {
+  background-image: url("../textures/2k_earth_nightmap.jpg");
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  --px0: 76%;
+  --px1: -124%;
+  background-position: var(--px0) 50%;
+  mix-blend-mode: screen;
+  opacity: .92;
+  -webkit-mask-image: radial-gradient(circle at 24% 22%, transparent 34%, rgba(0, 0, 0, .4) 50%, #000 66%);
+  mask-image: radial-gradient(circle at 24% 22%, transparent 34%, rgba(0, 0, 0, .4) 50%, #000 66%);
+  animation: pl-spin 132s linear infinite;
+  will-change: background-position;
+}
+
+.pl-world[data-p="earth"] .pl-rim {
+  box-shadow:
+    inset 0.45vmin 0.45vmin 1.5vmin color-mix(in srgb, var(--p-rim) 78%, #fff),
+    inset -1.4vmin -1.2vmin 2.4vmin rgba(0, 0, 0, .68),
+    inset 0 0 .8vmin rgba(255, 255, 255, .14);
+}
+
+/* Nearby Moon in the upper-right sky */
+.pl-moon-wrap {
+  position: absolute;
+  top: 10vh;
+  right: 11vw;
+  width: 11vmin;
+  height: 11vmin;
+  opacity: .46;
+  animation: pl-moon-float 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.pl-moon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #14161b;
+  box-shadow: 0 0 2.4vmin rgba(170, 210, 255, .20);
+}
+
+.pl-moon-tex {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: url("../textures/2k_moon.jpg") 30% 50% / 200% 100% repeat-x;
+  --px0: 30%;
+  --px1: -170%;
+  animation: pl-spin 220s linear infinite;
+}
+
+.pl-moon-shade {
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 24% 24%,
+    rgba(255, 255, 255, .10) 0%,
+    transparent 36%,
+    rgba(2, 4, 8, .68) 58%,
+    rgba(0, 0, 0, .96) 78%
+  );
+  box-shadow: inset -1.5vmin -1.2vmin 2.4vmin rgba(0, 0, 0, .85);
+}
+
+@keyframes pl-moon-float {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-1.4vmin, 1.8vmin, 0); }
+}
+
+/* Aurora curtains & orbital/city glints */
+.pl-aurora {
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 26vh;
+  border-radius: 50%;
+  background: linear-gradient(
+    180deg,
+    rgba(92, 245, 198, .28) 0%,
+    rgba(72, 186, 255, .16) 48%,
+    transparent 100%
+  );
+  opacity: 0;
+  transform-origin: top center;
+  animation: pl-aurora-sway var(--d) ease-in-out var(--dl) infinite;
+}
+
+@keyframes pl-aurora-sway {
+  0%, 100% { opacity: 0; transform: translate3d(-3vw, 0, 0) skewX(-16deg) scaleY(.82); }
+  50%      { opacity: var(--op); transform: translate3d(4vw, 1.5vh, 0) skewX(12deg) scaleY(1.14); }
+}
+
+.pl-eglint {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #cfefff;
+  box-shadow: 0 0 6px rgba(110, 198, 255, .7);
+  opacity: 0;
+  animation: pl-twinkle var(--d) ease-in-out var(--dl) infinite;
+}
+
+.pl-eglint:nth-child(3n) {
+  background: #ffe09a;
+  box-shadow: 0 0 6px rgba(255, 210, 120, .75);
+}
+
+/* ---------- 4. MARS: red frontier, rusty horizon, drifting dust ---------- */
+.pl-world[data-p="mars"] {
+  --exit-x: 18vmin;
+  --exit-y: 14vmin;
+  --enter-x: 20vmin;
+  --enter-y: 16vmin;
+}
+
+.pl-world[data-p="mars"] .pl-planet-wrap {
+  --sz: 62vmin;
+  --pl-op: .42;
+  --p-glow: #e8562a;
+  --p-rim: #ffb08a;
+  --p-base-lit: #8c3419;
+  --p-base-dark: #0d0302;
+  --sun-x: 24%;
+  --sun-y: 26%;
+  --sh-x: -1;
+  --sh-y: -1;
+  bottom: -18vmin;
+  right: -20vmin;
+  transform: rotate(-18deg);
+}
+
+.pl-world[data-p="mars"] .pl-tex {
+  background-image: url("../textures/2k_mars.jpg");
+  --px0: 42%;
+  --px1: -158%;
+  --spin-dur: 126s;
+}
+
+.pl-mgust {
+  left: -20vw;
+  top: var(--y);
+  width: 56vw;
+  height: 16vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(235, 102, 54, .22), transparent 72%);
+  opacity: 0;
+  animation: pl-gust var(--d) linear var(--dl) infinite;
+}
+
+@keyframes pl-gust {
+  0%   { opacity: 0; transform: translate3d(110vw, 4vh, 0) rotate(-6deg); }
+  25%  { opacity: var(--op); }
+  75%  { opacity: var(--op); }
+  100% { opacity: 0; transform: translate3d(-45vw, -8vh, 0) rotate(-6deg); }
+}
+
+.pl-mdust {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #ff9c75;
+  box-shadow: 0 0 6px rgba(232, 86, 42, .55);
+  opacity: 0;
+  animation: pl-drift-fade var(--d) linear var(--dl) infinite;
+}
+
+/* ---------- 5. JUPITER: colossal banded gas giant, Great Red Spot, lightning ---------- */
+.pl-world[data-p="jupiter"] {
+  --exit-x: 22vmin;
+  --exit-y: 0;
+  --enter-x: 24vmin;
+  --enter-y: 0;
+}
+
+.pl-world[data-p="jupiter"] .pl-planet-wrap {
+  --sz: 82vmin;
+  --pl-op: .36;
+  --p-glow: #e08d4f;
+  --p-rim: #ffe0ba;
+  --p-base-lit: #7c5638;
+  --p-base-dark: #0a0604;
+  --sun-x: 22%;
+  --sun-y: 34%;
+  --sh-x: -1;
+  --sh-y: -.5;
+  top: 8vh;
+  right: -30vmin;
+}
+
+.pl-world[data-p="jupiter"] .pl-sphere {
+  transform: scale(1.03, .97);
+}
+
+/* Great Red Spot at u ~ 0.365 starts framed prominently on the sunlit face */
+.pl-world[data-p="jupiter"] .pl-tex {
+  background-image: url("../textures/2k_jupiter.jpg");
+  --px0: 36%;
+  --px1: -164%;
+  --spin-dur: 88s;
+}
+
+.pl-jup-bands {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 7%,
+    rgba(255, 226, 190, .06) 7% 10%,
+    transparent 10% 18%,
+    rgba(198, 108, 56, .08) 18% 21%
+  );
+  opacity: .75;
+  animation: pl-jband-shift 18s ease-in-out infinite alternate;
+}
+
+@keyframes pl-jband-shift {
+  from { transform: translate3d(-1.2%, 0, 0); }
+  to   { transform: translate3d(1.2%, 0, 0); }
+}
+
+/* Sporadic high-altitude cloud lightning along Jupiter's dark terminator */
+.pl-jbolt {
+  position: absolute;
+  width: 6vmin;
+  height: 6vmin;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 250, 240, .95) 0%, rgba(190, 224, 255, .45) 35%, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.pl-jbolt.jb1 { left: 54%; top: 44%; animation: pl-lightning 9.7s linear 1.2s infinite; }
+.pl-jbolt.jb2 { left: 48%; top: 60%; animation: pl-lightning 13.3s linear 5.4s infinite; }
+.pl-jbolt.jb3 { left: 60%; top: 34%; animation: pl-lightning 17.1s linear 9.1s infinite; }
+
+@keyframes pl-lightning {
+  0%, 91%, 100% { opacity: 0; transform: scale(.7); }
+  92%           { opacity: .85; transform: scale(1.1); }
+  93.2%         { opacity: .15; transform: scale(.9); }
+  94.4%         { opacity: .95; transform: scale(1.25); }
+  96.5%         { opacity: 0; transform: scale(.8); }
+}
+
+.pl-jswirl {
+  right: -12vw;
+  top: var(--y);
+  width: var(--w);
+  height: 7vh;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, rgba(242, 184, 128, .22) 45%, rgba(210, 126, 70, .14) 72%, transparent);
+  opacity: 0;
+  animation: pl-jswirl-flow var(--d) ease-in-out var(--dl) infinite;
+}
+
+@keyframes pl-jswirl-flow {
+  0%, 100% { opacity: 0; transform: translate3d(8vw, 0, 0) scaleX(.9); }
+  50%      { opacity: var(--op); transform: translate3d(-14vw, 8px, 0) scaleX(1.15); }
+}
+
+.pl-jspeck {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #f6cfa4;
+  opacity: 0;
+  --dy: 6px;
+  animation: pl-drift-fade var(--d) linear var(--dl) infinite;
+}
+
+/* ---------- 6. SATURN: tilted rings (back + front + real alpha strip) & ice shards ---------- */
+.pl-world[data-p="saturn"] {
+  --exit-x: 18vmin;
+  --exit-y: -16vmin;
+  --enter-x: 20vmin;
+  --enter-y: -18vmin;
+}
+
+.pl-world[data-p="saturn"] .pl-planet-wrap {
+  --sz: 46vmin;
+  --pl-op: .42;
+  --p-glow: #dfc072;
+  --p-rim: #fff1c7;
+  --p-base-lit: #7c6844;
+  --p-base-dark: #0a0805;
+  --sun-x: 24%;
+  --sun-y: 26%;
+  --sh-x: -1;
+  --sh-y: -1;
+  top: -4vmin;
+  right: -2vmin;
+}
+
+.pl-ring-sys {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-22deg);
+}
+
+.pl-world[data-p="saturn"] .pl-sphere {
+  position: relative;
+  z-index: 2;
+  transform: scale(1.05, .95);
+}
+
+.pl-world[data-p="saturn"] .pl-tex {
+  background-image: url("../textures/2k_saturn.jpg");
+  --px0: 15%;
+  --px1: -185%;
+  --spin-dur: 96s;
+  opacity: .84;
+}
+
+/* Subtle curved shadow cast by the rings onto Saturn's upper cloud tops */
+.pl-world[data-p="saturn"] .pl-shade {
+  background:
+    linear-gradient(180deg, transparent 36%, rgba(0, 0, 0, .34) 41%, rgba(0, 0, 0, .18) 46%, transparent 50%),
+    radial-gradient(
+      circle at 24% 26%,
+      rgba(255, 255, 255, .08) 0%,
+      transparent 34%,
+      rgba(4, 3, 2, .48) 54%,
+      rgba(2, 2, 1, .88) 72%,
+      rgba(0, 0, 0, .97) 88%
+    );
+}
+
+.pl-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 248%;
+  height: 66%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    transparent 0% 47%,
+    rgba(190, 172, 138, .18) 47.5%,
+    rgba(205, 186, 148, .28) 53.5%,
+    rgba(242, 224, 180, .62) 55%,
+    rgba(250, 236, 198, .78) 63%,
+    rgba(232, 212, 168, .66) 71.5%,
+    rgba(18, 15, 12, .05) 73% 77.2%,
+    rgba(222, 204, 165, .48) 78%,
+    rgba(230, 214, 178, .55) 85%,
+    rgba(214, 196, 160, .42) 90.5%,
+    rgba(12, 10, 8, .04) 91.2% 92.4%,
+    rgba(218, 200, 164, .36) 93% 95%,
+    transparent 95.5% 96.8%,
+    rgba(235, 220, 185, .24) 97.4% 98.4%,
+    transparent 99%
+  );
+  opacity: .84;
+}
+
+/* Real 2k_saturn_ring_alpha.png radial texture sheen along the sunlit ring wing */
+.pl-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: url("../textures/2k_saturn_ring_alpha.png") right center / 27% 100% no-repeat;
+  opacity: .38;
+  mix-blend-mode: screen;
+  -webkit-mask-image: radial-gradient(closest-side, transparent 0% 47%, #000 48% 98%, transparent 99%);
+  mask-image: radial-gradient(closest-side, transparent 0% 47%, #000 48% 98%, transparent 99%);
+}
+
+.pl-ring-back {
+  z-index: 1;
+  clip-path: inset(0 0 49.6% 0);
+}
+
+/* Saturn's shadow falling across the rear-right section of the back ring */
+.pl-ring-back::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(108deg, transparent 52%, rgba(0, 0, 0, .78) 62%, rgba(0, 0, 0, .45) 80%, transparent 95%);
+}
+
+.pl-ring-front {
+  z-index: 3;
+  clip-path: inset(49.6% 0 0 0);
+}
+
+/* Sparkling ice shards drifting along Saturn's tilted ring plane */
+.pl-ice {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  background: #fff4d4;
+  border-radius: 1px;
+  box-shadow: 0 0 7px rgba(238, 216, 155, .75);
+  opacity: 0;
+  animation: pl-ice-drift var(--d) linear var(--dl) infinite;
+}
+
+@keyframes pl-ice-drift {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(45deg) scale(.6); }
+  20%  { opacity: var(--op); transform: translate3d(calc(var(--dx) * .2), calc(var(--dy) * .2), 0) rotate(90deg) scale(1.1); }
+  50%  { opacity: calc(var(--op) * .45); transform: translate3d(calc(var(--dx) * .5), calc(var(--dy) * .5), 0) rotate(135deg) scale(.85); }
+  78%  { opacity: var(--op); transform: translate3d(calc(var(--dx) * .78), calc(var(--dy) * .78), 0) rotate(180deg) scale(1.15); }
+  100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) rotate(225deg) scale(.5); }
+}
+
+/* ---------- 7. URANUS: sideways ice giant, 76deg vertical ring, tilted aurora ---------- */
+.pl-world[data-p="uranus"] {
+  --exit-x: -18vmin;
+  --exit-y: 16vmin;
+  --enter-x: -20vmin;
+  --enter-y: 18vmin;
+}
+
+.pl-world[data-p="uranus"] .pl-planet-wrap {
+  --sz: 54vmin;
+  --pl-op: .36;
+  --p-glow: #4ad8e8;
+  --p-rim: #c4faff;
+  --p-base-lit: #3c8e99;
+  --p-base-dark: #030b0e;
+  --sun-x: 72%;
+  --sun-y: 22%;
+  --sh-x: 1;
+  --sh-y: -1;
+  bottom: -20vmin;
+  left: -12vmin;
+}
+
+.pl-uranus-sys {
+  transform: rotate(74deg);
+}
+
+.pl-world[data-p="uranus"] .pl-sphere {
+  position: relative;
+  z-index: 2;
+}
+
+/* Retrograde rotation */
+.pl-world[data-p="uranus"] .pl-tex {
+  background-image: url("../textures/2k_uranus.jpg");
+  --px0: 20%;
+  --px1: 220%;
+  --spin-dur: 118s;
+}
+
+.pl-uranus-sys .pl-ring {
+  width: 214%;
+  height: 50%;
+  background: radial-gradient(
+    closest-side,
+    transparent 0% 62%,
+    rgba(140, 240, 250, .18) 64% 66%,
+    transparent 67% 72%,
+    rgba(165, 246, 255, .30) 73.5% 75.5%,
+    transparent 76.5% 81%,
+    rgba(124, 238, 247, .42) 82.5% 84.5%,
+    transparent 86%
+  );
+  opacity: .72;
+}
+
+.pl-uranus-sys .pl-ring::before,
+.pl-uranus-sys .pl-ring-back::after {
+  display: none;
+}
+
+.pl-uaurora {
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: 16vh;
+  border-radius: 50%;
+  background: linear-gradient(125deg, transparent, rgba(124, 238, 247, .24) 45%, rgba(132, 180, 255, .18) 70%, transparent);
+  opacity: 0;
+  animation: pl-uaurora var(--d) ease-in-out var(--dl) infinite;
+}
+
+@keyframes pl-uaurora {
+  0%, 100% { opacity: 0; transform: translate3d(-2vw, 2vh, 0) rotate(-32deg) scale(.92); }
+  50%      { opacity: var(--op); transform: translate3d(3vw, -2vh, 0) rotate(-26deg) scale(1.1); }
+}
+
+.pl-ucryo {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  background: #c6fbff;
+  border-radius: 1px;
+  box-shadow: 0 0 7px rgba(124, 238, 247, .7);
+  opacity: 0;
+  animation: pl-ice-drift var(--d) linear var(--dl) infinite;
+  --op: .65;
+}
+
+/* ---------- 8. NEPTUNE: abyssal cobalt giant, fast supersonic wind streaks ---------- */
+.pl-world[data-p="neptune"] {
+  --exit-x: 18vmin;
+  --exit-y: -16vmin;
+  --enter-x: 20vmin;
+  --enter-y: -18vmin;
+}
+
+.pl-world[data-p="neptune"] .pl-planet-wrap {
+  --sz: 62vmin;
+  --pl-op: .44;
+  --p-glow: #2d6bff;
+  --p-rim: #9ec8ff;
+  --p-base-lit: #183a8c;
+  --p-base-dark: #02040e;
+  --sun-x: 24%;
+  --sun-y: 26%;
+  --sh-x: -1;
+  --sh-y: -1;
+  top: -18vmin;
+  right: -16vmin;
+}
+
+.pl-world[data-p="neptune"] .pl-tex {
+  background-image: url("../textures/2k_neptune.jpg");
+  --px0: 46%;
+  --px1: -154%;
+  --spin-dur: 102s;
+}
+
+.pl-nwind {
+  left: 0;
+  top: var(--y);
+  width: var(--w);
+  height: 1.5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent, rgba(109, 164, 255, .65) 45%, rgba(185, 224, 255, .9) 75%, transparent);
+  opacity: 0;
+  animation: pl-wind-race var(--d) linear var(--dl) infinite;
+}
+
+@keyframes pl-wind-race {
+  0%   { opacity: 0; transform: translate3d(108vw, 0, 0) scaleX(.7); }
+  12%  { opacity: var(--op); }
+  84%  { opacity: var(--op); }
+  100% { opacity: 0; transform: translate3d(-32vw, 0, 0) scaleX(1.15); }
+}
+
+.pl-nfleck {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #a9ceff;
+  box-shadow: 0 0 7px rgba(45, 107, 255, .85);
+  opacity: 0;
+  animation: pl-twinkle var(--d) ease-in-out var(--dl) infinite;
+}
+
+/* ---------- 9. SUN (BONUS): burning solar horizon, corona prominences, rising embers ---------- */
+.pl-world[data-p="sun"] {
+  --exit-x: 10vmin;
+  --exit-y: 24vmin;
+  --enter-x: 10vmin;
+  --enter-y: 28vmin;
+}
+
+.pl-world[data-p="sun"] .pl-planet-wrap {
+  --sz: 88vmin;
+  --pl-op: .36;
+  --p-glow: #ff7a18;
+  --p-rim: #ffe494;
+  --p-base-lit: #b84a08;
+  --p-base-dark: #260800;
+  bottom: -48vmin;
+  right: -16vmin;
+}
+
+.pl-world[data-p="sun"] .pl-sphere {
+  box-shadow:
+    0 0 8vmin rgba(255, 138, 32, .52),
+    0 0 22vmin rgba(255, 86, 16, .26);
+}
+
+.pl-world[data-p="sun"] .pl-tex {
+  background-image: url("../textures/2k_sun.jpg");
+  --px0: 12%;
+  --px1: -188%;
+  --spin-dur: 148s;
+  opacity: .72;
+}
+
+/* Self-luminous photosphere limb darkening (no cold dark terminator) */
+.pl-world[data-p="sun"] .pl-shade {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 240, 180, .14) 0%,
+    rgba(255, 164, 48, .12) 48%,
+    rgba(182, 46, 0, .54) 78%,
+    rgba(42, 8, 0, .86) 100%
+  );
+  box-shadow:
+    inset 0 0 6vmin rgba(255, 118, 20, .72),
+    inset 0 0 2vmin rgba(255, 232, 148, .55);
+}
+
+.pl-world[data-p="sun"] .pl-rim {
+  box-shadow: inset 0 0 2.2vmin rgba(255, 238, 170, .75);
+  opacity: .85;
+}
+
+.pl-corona {
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 184, 72, .42) 34%,
+    rgba(255, 108, 22, .22) 52%,
+    rgba(220, 48, 8, .08) 66%,
+    transparent 76%
+  );
+  animation: pl-corona-breathe 8s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes pl-corona-breathe {
+  from { transform: scale(.98); opacity: .82; }
+  to   { transform: scale(1.05); opacity: 1; }
+}
+
+/* Arching solar flare prominences rising along the upper solar limb */
+.pl-flare {
+  position: absolute;
+  border-radius: 50%;
+  border-top: 2px solid rgba(255, 204, 104, .7);
+  border-left: 1px solid rgba(255, 128, 32, .35);
+  border-right: 1px solid rgba(255, 128, 32, .35);
+  border-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.pl-flare.f1 { left: 18%; top: -5%; width: 22vmin; height: 14vmin; transform-origin: bottom center; animation: pl-flare-arc 10s ease-in-out 0s infinite; }
+.pl-flare.f2 { left: 44%; top: -7%; width: 28vmin; height: 16vmin; transform-origin: bottom center; animation: pl-flare-arc 13s ease-in-out -4.5s infinite; }
+.pl-flare.f3 { left: 66%; top: -2%; width: 18vmin; height: 11vmin; transform-origin: bottom center; animation: pl-flare-arc 11.5s ease-in-out -8s infinite; }
+
+@keyframes pl-flare-arc {
+  0%, 100% { opacity: 0; transform: translate3d(0, 2vmin, 0) scale(.75); }
+  45%      { opacity: .72; transform: translate3d(0, -1.6vmin, 0) scale(1.08); }
+  75%      { opacity: .35; transform: translate3d(0, -2.4vmin, 0) scale(1.16); }
+}
+
+.pl-ember {
+  left: var(--x);
+  top: var(--y);
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #ffd47a;
+  box-shadow: 0 0 8px rgba(255, 132, 28, .85);
+  opacity: 0;
+  animation: pl-ember-rise var(--d) ease-out var(--dl) infinite;
+}
+
+@keyframes pl-ember-rise {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.6); }
+  18%  { opacity: var(--op); transform: translate3d(calc(var(--dx) * .2), calc(var(--dy) * .2), 0) scale(1.1); }
+  75%  { opacity: calc(var(--op) * .6); }
+  100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) scale(.25); }
+}
+
+/* ---------- Shared ambient particle keyframes ---------- */
+@keyframes pl-drift-fade {
+  0%   { opacity: 0; transform: translate3d(0, 0, 0) scale(.7); }
+  20%  { opacity: var(--op, .65); }
+  80%  { opacity: var(--op, .55); }
+  100% { opacity: 0; transform: translate3d(var(--dx, -60px), var(--dy, -20px), 0) scale(.4); }
+}
+
+@keyframes pl-twinkle {
+  0%, 100% { opacity: .08; transform: scale(.7); }
+  50%      { opacity: .82; transform: scale(1.25); }
+}
+
+/* =====================================================================
+   ~900 ms Planet Theme Transition Wave
+   ===================================================================== */
+.pl-wave {
+  position: fixed;
+  inset: 0;
+  z-index: 142;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pl-wave-ring,
+.pl-wave-wash {
+  position: absolute;
+  left: var(--wx, 88%);
+  top: var(--wy, 88%);
+  width: 120vmax;
+  height: 120vmax;
+  margin-left: -60vmax;
+  margin-top: -60vmax;
+  border-radius: 50%;
+  display: block;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.pl-wave-ring {
+  border: 2px solid color-mix(in srgb, var(--wacc, var(--acc)) 82%, #fff);
+  background: radial-gradient(
+    circle,
+    transparent 56%,
+    color-mix(in srgb, var(--wacc, var(--acc)) 22%, transparent) 69%,
+    color-mix(in srgb, var(--wacc, var(--acc)) 40%, #fff) 71%,
+    transparent 73.5%
+  );
+  animation: pl-wave-sweep 880ms cubic-bezier(.16, .84, .32, 1) forwards;
+}
+
+.pl-wave-wash {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--wacc, var(--acc)) 20%, transparent) 0%,
+    color-mix(in srgb, var(--wacc, var(--acc)) 9%, transparent) 46%,
+    transparent 72%
+  );
+  animation: pl-wave-wash 860ms var(--ease-out) forwards;
+}
+
+@keyframes pl-wave-sweep {
+  0%   { opacity: 0; transform: scale(.06); }
+  14%  { opacity: .95; }
+  74%  { opacity: .52; }
+  100% { opacity: 0; transform: scale(2.35); }
+}
+
+@keyframes pl-wave-wash {
+  0%   { opacity: 0; transform: scale(.15); }
+  28%  { opacity: .88; }
+  100% { opacity: 0; transform: scale(2.15); }
+}
+
+/* =====================================================================
+   Settings UI — Planet Theme Strip, Mini Textured Spheres & Credit
+   ===================================================================== */
+.set:has(.planet-strip) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.set-planets {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+}
+
+.pl-set-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.pl-set-head > div {
+  display: grid;
+  gap: 2px;
+}
+
+.pl-tagline {
+  display: block;
+  font-size: 12px;
+}
+
+.pl-explore {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--acc);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.pl-explore:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pl-explore .i {
+  width: 14px;
+  height: 14px;
+}
+
+.pl-mode-note {
+  display: none;
+  margin-top: -2px;
+}
+
+html:is([data-theme="paper"], [data-theme="night"]) .pl-mode-note {
+  display: block;
+}
+
+.planet-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 2px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+
+.planet-chip {
+  flex: none;
+  scroll-snap-align: start;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: 74px;
+  padding: 11px 10px 8px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  color: var(--mute);
+  font: 500 12px var(--font);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-med) var(--ease-spring), box-shadow var(--t-med);
+}
+
+.planet-chip:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, .06);
+  border-color: color-mix(in srgb, var(--pc) 42%, var(--line-2));
+  transform: translateY(-2px);
+}
+
+.planet-chip:active {
+  transform: scale(.95);
+}
+
+.planet-chip.on {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--pc) 14%, rgba(255, 255, 255, .04));
+  border-color: var(--pc);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--pc) 26%, transparent), inset 0 1px 0 rgba(255, 255, 255, .14);
+}
+
+/* Miniature shaded 3D planet spheres painted with real textures */
+.pl-orb {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  --ox0: 36%;
+  --ox1: -164%;
+  background-repeat: repeat-x;
+  background-size: 200% 100%;
+  background-position: var(--ox0) 50%;
+  box-shadow:
+    inset -8px -6px 12px rgba(0, 0, 0, .78),
+    inset 2px 2px 5px rgba(255, 255, 255, .28),
+    0 0 10px color-mix(in srgb, var(--pc) 34%, transparent);
+}
+
+.planet-chip.on .pl-orb {
+  box-shadow:
+    inset -8px -6px 12px rgba(0, 0, 0, .72),
+    inset 2px 2px 6px rgba(255, 255, 255, .36),
+    0 0 14px color-mix(in srgb, var(--pc) 62%, transparent);
+}
+
+.planet-chip:hover .pl-orb,
+.planet-chip.on .pl-orb {
+  animation: pl-orb-spin 18s linear infinite;
+}
+
+@keyframes pl-orb-spin {
+  from { background-position-x: var(--ox0); }
+  to   { background-position-x: var(--ox1); }
+}
+
+.pl-orb-mercury { background-image: url("../textures/2k_mercury.jpg"); }
+.pl-orb-venus   { background-image: url("../textures/2k_venus_atmosphere.jpg"); --ox0: 20%; --ox1: 220%; }
+.pl-orb-earth   { background-image: url("../textures/2k_earth_daymap.jpg"); --ox0: 74%; --ox1: -126%; }
+.pl-orb-mars    { background-image: url("../textures/2k_mars.jpg"); }
+.pl-orb-jupiter { background-image: url("../textures/2k_jupiter.jpg"); --ox0: 34%; --ox1: -166%; }
+.pl-orb-saturn  { background-image: url("../textures/2k_saturn.jpg"); }
+.pl-orb-uranus  { background-image: url("../textures/2k_uranus.jpg"); --ox0: 20%; --ox1: 220%; }
+.pl-orb-neptune { background-image: url("../textures/2k_neptune.jpg"); }
+.pl-orb-sun     {
+  background-image: url("../textures/2k_sun.jpg");
+  box-shadow:
+    inset 0 0 8px rgba(255, 118, 16, .65),
+    0 0 14px rgba(255, 164, 52, .62);
+}
+
+/* Miniature Saturn ring accent on its picker sphere */
+.pl-orb-saturn::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 15px;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  border-radius: 50%;
+  border: 2.5px solid rgba(238, 216, 155, .72);
+  border-top-color: rgba(238, 216, 155, .28);
+  pointer-events: none;
+}
+
+/* Miniature Uranus vertical ring accent */
+.pl-orb-uranus::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 12px;
+  transform: translate(-50%, -50%) rotate(74deg);
+  border-radius: 50%;
+  border: 1.5px solid rgba(124, 238, 247, .55);
+  pointer-events: none;
+}
+
+/* Keep mini planet spheres true-to-colour on Paper theme */
+html[data-theme="paper"] .pl-orb {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Planet-native accent swatch marker */
+.pick-c.pick-planet span {
+  position: relative;
+}
+
+.pick-c.pick-planet span::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--cc) 65%, transparent);
+  pointer-events: none;
+}
+
+.pl-credit {
+  margin-top: 18px;
+  text-align: center;
+  opacity: .72;
+}
+
+/* =====================================================================
+   Responsive Phone Tuning (<= 820px) — stay silky on mid-range Android
+   ===================================================================== */
+@media (max-width: 820px) {
+  .pl-world[data-p="mercury"] .pl-planet-wrap,
+  .pl-world[data-p="neptune"] .pl-planet-wrap {
+    --sz: 68vw;
+    top: -22vw;
+    right: -22vw;
+  }
+
+  .pl-world[data-p="earth"] .pl-planet-wrap,
+  .pl-world[data-p="mars"] .pl-planet-wrap {
+    --sz: 74vw;
+    bottom: -24vw;
+    right: -24vw;
+  }
+
+  .pl-moon-wrap {
+    top: 8vh;
+    right: 8vw;
+    width: 14vw;
+    height: 14vw;
+  }
+
+  .pl-world[data-p="saturn"] .pl-planet-wrap {
+    --sz: 52vw;
+    top: 2vh;
+    right: -14vw;
+  }
+
+  .pl-world[data-p="jupiter"] .pl-planet-wrap {
+    --sz: 88vw;
+    right: -42vw;
+  }
+
+  .pl-world[data-p="venus"] .pl-planet-wrap,
+  .pl-world[data-p="uranus"] .pl-planet-wrap {
+    --sz: 72vw;
+    left: -26vw;
+    bottom: -22vw;
+  }
+
+  .pl-world[data-p="sun"] .pl-planet-wrap {
+    --sz: 100vw;
+    bottom: -56vw;
+    right: -24vw;
+  }
+
+  /* Cap ambient particles on phones for consistent 60fps fill-rate */
+  .pl-ambient .pl-p:nth-child(n+15) {
+    display: none;
+  }
+
+  .planet-strip {
+    scrollbar-width: none;
+    padding: 4px 0 6px;
+  }
+
+  .planet-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .planet-chip {
+    min-width: 72px;
+    min-height: 76px;
+  }
+}
+
+/* =====================================================================
+   Visibility Pause, Reduced Motion & Motion Off (HARD CONSTRAINTS)
+   ===================================================================== */
+html.tab-hidden #space .pl-stage,
+html.tab-hidden #space .pl-stage *,
+html.tab-hidden #space .pl-stage *::before,
+html.tab-hidden #space .pl-stage *::after,
+html.tab-hidden .planet-chip .pl-orb {
+  animation-play-state: paused !important;
+}
+
+/* Reduced motion: static planet, slow fades only */
+html[data-motion="reduced"] #space .pl-stage *,
+html[data-motion="reduced"] #space .pl-stage *::before,
+html[data-motion="reduced"] #space .pl-stage *::after,
+html[data-motion="reduced"] .planet-chip .pl-orb {
+  animation: none !important;
+}
+
+html[data-motion="reduced"] #space .pl-ambient,
+html[data-motion="reduced"] #space .pl-jbolt,
+html[data-motion="reduced"] #space .pl-flare,
+html[data-motion="reduced"] .pl-wave {
+  display: none !important;
+}
+
+html[data-motion="reduced"] .planet-chip {
+  transition: opacity 150ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease !important;
+  transform: none !important;
+}
+
+html[data-motion="reduced"] .pl-world.is-fading-in,
+html[data-motion="reduced"] .pl-world.is-fading-out {
+  transition: opacity 320ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="off"]) #space .pl-stage *,
+  html:not([data-motion="off"]) #space .pl-stage *::before,
+  html:not([data-motion="off"]) #space .pl-stage *::after,
+  html:not([data-motion="off"]) .planet-chip .pl-orb {
+    animation: none !important;
+  }
+
+  html:not([data-motion="off"]) #space .pl-ambient,
+  html:not([data-motion="off"]) #space .pl-jbolt,
+  html:not([data-motion="off"]) #space .pl-flare,
+  html:not([data-motion="off"]) .pl-wave {
+    display: none !important;
+  }
+
+  html:not([data-motion="off"]) .planet-chip {
+    transition: opacity 150ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease !important;
+    transform: none !important;
+  }
+
+  html:not([data-motion="off"]) .pl-world.is-fading-in,
+  html:not([data-motion="off"]) .pl-world.is-fading-out {
+    transition: opacity 320ms ease !important;
+  }
+}
+
+/* Motion off: completely static, zero animations or transitions */
+html[data-motion="off"] #space .pl-stage,
+html[data-motion="off"] #space .pl-stage *,
+html[data-motion="off"] #space .pl-stage *::before,
+html[data-motion="off"] #space .pl-stage *::after,
+html[data-motion="off"] .planet-chip,
+html[data-motion="off"] .planet-chip .pl-orb {
+  animation: none !important;
+  transition: none !important;
+}
+
+html[data-motion="off"] #space .pl-ambient,
+html[data-motion="off"] #space .pl-jbolt,
+html[data-motion="off"] #space .pl-flare,
+html[data-motion="off"] .pl-wave {
+  display: none !important;
+}
