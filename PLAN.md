@@ -11,7 +11,9 @@ Sıra önemli: **Faz 0 → 1 → 2** bir arada, sonra 3–5. Her faz tek başın
 - [x] **Faz 0** — kütüphaneler ve fontlar `vendor/` içinde (`npm run vendor`), internetsiz çalışıyor, CSP eklendi
 - [x] **Faz 1** — Electron masaüstü uygulaması + `MathPad-Setup-1.0.0.exe` + kaldırıcı ("verilerim de silinsin mi?" sorusu), `.mathpad` yedek dosyası ilişkilendirmesi. Üretmek için: `Kurulum-Olustur.bat`
 - [x] **Faz 7.1** — tasarım dili temeli: hareket token'ları, film greni, imleci izleyen ışık, kayan araç göstergesi, sayfa geçişleri, sayaç animasyonları, süpernova, efekt sesleri, Ayarlar → hareket/ses
-- [ ] Faz 2 → sıradaki
+- [x] **Faz 2** — çöp kutusu (30 gün, Geri al), günlük otomatik yedek (masaüstü), depolama ekranı, ders paylaşma (.mathpad)
+- [x] **Web yayını** — https://emirhanbaba31.github.io/mathpad/ (GitHub Pages, repo: Emirhanbaba31/mathpad). Güncellemek için: değişiklikleri commit'le, `git push` yeter; `sw.js` içindeki VERSION'ı artırmayı unutma.
+- [ ] Faz 4 → sıradaki (komut paleti, kırpma, çoklu seçim, şekil düzeltme)
 
 ## Faz 0 — Altyapı (diğer her şey buna dayanıyor)
 
