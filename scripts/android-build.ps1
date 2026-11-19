@@ -26,7 +26,14 @@ try {
     if ($LASTEXITCODE) { throw 'Anahtar olusturulamadi' }
     Write-Host "Anahtar hazir. $keyDir klasorunu yedekle (USB, Drive...)." -ForegroundColor Green
   } else {
-    $env:MP_KS_PASS = & $plain (Read-Host 'Imza anahtari sifresi' -AsSecureString)
+    # check the password against the key before the build, so a typo costs a retry instead of a failed build
+    for ($try = 1; ; $try++) {
+      $env:MP_KS_PASS = & $plain (Read-Host 'Imza anahtari sifresi' -AsSecureString)
+      & "$env:JAVA_HOME\bin\keytool.exe" -list -keystore $env:MP_KEYSTORE -storepass:env MP_KS_PASS *> $null
+      if (-not $LASTEXITCODE) { break }
+      if ($try -ge 3) { throw 'Sifre 3 kez yanlis girildi' }
+      Write-Host 'Sifre yanlis, tekrar dene.' -ForegroundColor Yellow
+    }
   }
 
   Set-Location $root
