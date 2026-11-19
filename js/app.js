@@ -19,6 +19,7 @@ let cleanup = null, installEvt = null, pendingFiles = null, update = null; // up
 
 // ---------- helpers ----------
 const STATUS = { open: 'Açık', solved: 'Çözüldü', review: 'Tekrar' };
+const solarIcon = () => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="10" ry="4.4" transform="rotate(-24 12 12)"/><circle cx="19.3" cy="8.7" r="1.4" fill="currentColor" stroke="none"/></svg>`;
 const glyph = c => c ? `<i class="cglyph" style="--cc:${c.color || '#f4f4f5'}" aria-hidden="true">${esc(c.icon || '•')}</i>` : '';
 // course card planet: size follows study time, one moon per 5 problems
 const planetSvg = (c, secs, n) => { const r = 9 + Math.min(15, secs / 3600 * 3), moons = Math.min(4, Math.ceil(n / 5));
@@ -476,6 +477,8 @@ function home() {
       <div class="card sky-card"><div class="card-h pad-x"><h3>Senin gökyüzün</h3><span class="mute small">${S.problems.filter(p => p.status === 'solved').length} yıldız · her ders bir takımyıldız</span></div>
         <div class="sky-wrap"><canvas class="sky" aria-label="Çözdüğün sorular yıldız olarak"></canvas><div class="sky-tip" hidden></div>
         ${S.problems.some(p => p.status === 'solved' || p.status === 'review') ? '' : '<p class="sky-empty mute">İlk soruyu çözdüğünde burada ilk yıldızın doğacak ✦</p>'}</div></div>
+      <div class="card solar-card"><div class="card-h pad-x"><div class="solar-card-head"><h3>Güneş Sistemi</h3><span class="mute small">8 gezegen · etkileşimli 3B gözlemevi</span></div><a class="btn small solar-go" href="#/evren">${solarIcon()} Güneş sistemine git</a></div>
+        <div class="solar-preview-wrap"><div class="solar-preview-host" data-solar-preview></div><span class="solar-preview-cap" aria-hidden="true">Keşfetmek için dokun →</span></div></div>
       <div class="card pad galaxy-card"><div class="card-h"><h3>Yıllık galaksi</h3><span class="mute small">son 12 ayda ${gal.total} soru</span></div><div class="galaxy-scroll">${gal.svg}</div></div>
       <div class="card pad badges-card"><div class="card-h"><h3>Rozetler</h3><span class="mute small">${bd.n}/${badges.BADGES.length}</span></div><div class="badge-row">${bd.html}</div></div>
       <div class="card pad coach-card" data-coach>${coachHtml()}</div>
@@ -493,7 +496,16 @@ function home() {
     if (e.target.closest('[data-pomo-go]')) pomoToggle();
     if (e.target.closest('[data-coach-go]')) runCoach();
   };
-  return mountSky($('canvas.sky'), { courses: S.courses, problems: S.problems, onOpen: id => location.hash = '#/p/' + id });
+  const stopSky = mountSky($('canvas.sky'), { courses: S.courses, problems: S.problems, onOpen: id => location.hash = '#/p/' + id });
+  let dead = false, stopSolar = null;
+  const solarHost = $('[data-solar-preview]');
+  if (solarHost) {
+    import('./solar.js').then(({ mountSolar }) => {
+      if (dead || !solarHost.isConnected) return;
+      stopSolar = mountSolar(solarHost, { preview: true });
+    }).catch(() => {});
+  }
+  return () => { dead = true; stopSky?.(); stopSolar?.(); };
 }
 
 function pcard(p) {
@@ -571,7 +583,7 @@ async function imagesToEls(srcs) {
 }
 
 function courses() {
-  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Tüm dersler</p><h1>Dersler</h1></div><button class="btn primary" data-act="add-course">${icon('plus')} Ders ekle</button></header>
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Tüm dersler</p><h1>Dersler</h1></div><div class="row"><a class="btn solar-entry-btn" href="#/evren" aria-label="Güneş Sistemi görünümüne git">${solarIcon()} Güneş Sistemi</a><button class="btn primary" data-act="add-course">${icon('plus')} Ders ekle</button></div></header>
     <div class="cgrid">${S.courses.map(c => {
       const ps = S.problems.filter(p => p.course === c.id), s = ps.filter(p => p.status === 'solved').length, r = ps.filter(p => p.status === 'review').length;
       const t = ps.reduce((a, p) => a + (p.secs || 0), 0);
@@ -609,6 +621,17 @@ async function sim(id) {
     <div class="tabs">${SIMS.map(x => `<a href="#/sim/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
     <div class="card pad tool-body sim-body" data-sim></div></div>`;
   return mountSim($('[data-sim]'), cur.id);
+}
+
+// Interactive 3D Solar System view (#/evren), loaded on demand so startup stays fast
+async function solar() {
+  const { mountSolar } = await import('./solar.js');
+  if (route_()[0] !== 'evren') return;
+  const prevTitle = document.title;
+  document.title = 'Güneş Sistemi · MathPad';
+  view.innerHTML = `<div class="solar-page" data-solar-stage></div>`;
+  const stop = mountSolar($('[data-solar-stage]'), { preview: false });
+  return () => { document.title = prevTitle; stop?.(); };
 }
 
 async function settings() {
@@ -1097,8 +1120,8 @@ function resetScrollChrome() {
   document.body.classList.remove('board-immersive');
 }
 function syncSlimBar() {
-  const isBoard = document.body.dataset.page === 'p';
-  const h1 = !isBoard && $('.page-h h1', view);
+  const isFull = document.body.dataset.page === 'p' || document.body.dataset.page === 'evren';
+  const h1 = !isFull && $('.page-h h1', view);
   if (!h1) {
     slimTitle.innerHTML = '';
     slimBtn.setAttribute('aria-label', 'Yukarı çık');
@@ -1115,7 +1138,7 @@ slimBtn.onclick = () => {
 };
 function handleViewScroll() {
   scrollRaf = 0;
-  if (!phoneQ.matches || document.body.dataset.page === 'p') return;
+  if (!phoneQ.matches || document.body.dataset.page === 'p' || document.body.dataset.page === 'evren') return;
   const maxY = Math.max(0, view.scrollHeight - view.clientHeight);
   if (maxY < 48) { setSlim(false); setNavHidden(false); lastScrollY = 0; scrollDirAcc = 0; return; }
   const y = Math.max(0, Math.min(view.scrollTop, maxY));
@@ -1196,7 +1219,7 @@ phoneQ.addEventListener('change', e => {
 async function route() {
   const prev = cleanup; cleanup = null; await prev?.();
   const [a = '', b, c] = route_();
-  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, settings }[a] || notFound;
+  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, settings, evren: solar }[a] || notFound;
   await fx.transition(async () => {
     document.body.dataset.page = a || 'home';
     resetScrollChrome();
