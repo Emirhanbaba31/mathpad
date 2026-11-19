@@ -4,7 +4,7 @@ import { createBoard, renderTo, COLORS } from './board.js';
 import * as T from './tools.js';
 import { $, $$, esc, modal, confirmBox, toast, icon, logo, download, loadScript } from './ui.js';
 import * as fx from './fx.js';
-import { astronaut, mountTutor, keyCard, mountRoamer, classify, coach, getKey } from './astro.js';
+import { astronaut, mountTutor, keyCard, mountRoamer, novaReact, classify, coach, getKey } from './astro.js';
 import { mountSky, galaxyCalendar, scopeChart } from './sky.js';
 import { SYMBOLS, symbolSvg } from './symbols.js';
 import { SHAPE_NAMES } from './shapes.js';
@@ -936,8 +936,8 @@ async function problem(id) {
     const s = b.dataset.s, was = p.status;
     p.status = s; p.solvedAt = s === 'solved' ? (was === 'solved' ? p.solvedAt : Date.now()) : null; p.updated = Date.now();
     persist(); $$('[data-s]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
-    if (s === 'solved' && was !== 'solved') celebrate();
-    if (s === 'review' && was !== 'review') toast('Tekrar listesine eklendi');
+    if (s === 'solved' && was !== 'solved') { celebrate(); novaReact('celebrate'); }
+    if (s === 'review' && was !== 'review') { toast('Tekrar listesine eklendi'); novaReact('review'); }
     nav();
   };
   $('[data-meta]').onclick = async () => {
