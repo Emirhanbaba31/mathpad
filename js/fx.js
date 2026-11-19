@@ -116,3 +116,47 @@ export function slideIndicator(bar, active) {
   ind.style.transform = `translateX(${active.offsetLeft}px)`;
   ind.style.width = active.offsetWidth + 'px';
 }
+
+// Hyperspace jump: stars stretch into streaks from the centre (focus mode entry/exit).
+export function hyperspace(reverse = false) {
+  if (!full()) return;
+  const cv = document.createElement('canvas'), dpr = devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.className = 'fx-layer'; cv.width = W * dpr; cv.height = H * dpr; document.body.append(cv);
+  const c = cv.getContext('2d'); c.scale(dpr, dpr);
+  const st = Array.from({ length: 220 }, () => ({ a: Math.random() * 6.283, d: Math.random() * .9 + .05, s: Math.random() * .8 + .4 }));
+  const t0 = performance.now(), D = 900, cx = W / 2, cy = H / 2, R = Math.hypot(W, H) / 2;
+  (function frame(t) {
+    let k = Math.min(1, (t - t0) / D); if (reverse) k = 1 - k;
+    const e = k * k * (3 - 2 * k), fade = Math.sin(Math.PI * Math.min(1, (t - t0) / D));
+    c.clearRect(0, 0, W, H); c.strokeStyle = '#fff'; c.lineCap = 'round';
+    for (const s of st) {
+      const r0 = s.d * R, len = e * R * .6 * s.s, x = Math.cos(s.a), y = Math.sin(s.a);
+      c.globalAlpha = fade * (.3 + .7 * s.s); c.lineWidth = .6 + s.s;
+      c.beginPath(); c.moveTo(cx + x * r0, cy + y * r0); c.lineTo(cx + x * (r0 + len), cy + y * (r0 + len)); c.stroke();
+    }
+    if (t - t0 < D) requestAnimationFrame(frame); else cv.remove();
+  })(t0);
+}
+
+// Theme change: a thin scan line sweeps down and the theme flips as it passes the middle.
+export function scan(apply) {
+  if (!full()) return apply();
+  const s = document.createElement('div'); s.className = 'scanline'; document.body.append(s);
+  setTimeout(apply, 380); setTimeout(() => s.remove(), 900);
+}
+
+// Space ambience for focus mode: soft brown noise through a low-pass filter. Only when sounds are on.
+let amb = null;
+export function ambience(on) {
+  if (!on || document.documentElement.dataset.sound !== 'on') { amb?.stop(); amb = null; return; }
+  if (amb) return;
+  try {
+    const ctx = new AudioContext(), len = ctx.sampleRate * 4, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    let last = 0; for (let i = 0; i < len; i++) { last = (last + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.2; }
+    const src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; src.loop = true; lp.type = 'lowpass'; lp.frequency.value = 420;
+    g.gain.setValueAtTime(0, ctx.currentTime); g.gain.linearRampToValueAtTime(.18, ctx.currentTime + 2);
+    src.connect(lp); lp.connect(g); g.connect(ctx.destination); src.start();
+    amb = { stop() { g.gain.linearRampToValueAtTime(0, ctx.currentTime + .8); setTimeout(() => ctx.close(), 900); } };
+  } catch { amb = null; }
+}

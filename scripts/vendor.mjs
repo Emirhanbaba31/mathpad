@@ -18,6 +18,9 @@ copy('katex/dist/fonts', 'katex/fonts');
 copy('pdfjs-dist/build/pdf.min.js', 'pdf.min.js');
 copy('pdfjs-dist/build/pdf.worker.min.js', 'pdf.worker.min.js');
 copy('jspdf/dist/jspdf.umd.min.js', 'jspdf.umd.min.js');
+// Anthropic SDK (for the astronaut tutor) bundled into one browser ES module
+import { buildSync } from 'esbuild';
+buildSync({ entryPoints: [nm('@anthropic-ai/sdk/index.mjs')], bundle: true, format: 'esm', minify: true, platform: 'browser', outfile: join(out, 'anthropic.mjs'), logLevel: 'error' });
 
 // Fonts: only latin + latin-ext (Turkish) woff2 files, one stylesheet.
 const fonts = [['space-grotesk', 'Space Grotesk', [400, 500, 600, 700]], ['jetbrains-mono', 'JetBrains Mono', [400, 500]]];

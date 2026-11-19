@@ -35,8 +35,13 @@ export async function load() {
   navigator.storage?.persist?.(); // ask browser not to evict data
 }
 // Upgrade older saved data in place. Add a step here whenever the data shape changes.
+export const GLYPHS = ['Σ', '∫', '∂', '∇', 'Ω', '∿', 'λ', 'π', 'μ', 'θ', '⚡', '∞'];
+export const PALETTE = ['#f4f4f5', '#7dd3fc', '#c4b5fd', '#fca5a5', '#86efac', '#fde68a', '#f9a8d4', '#5eead4'];
+// every course gets a glyph and a colour (its identity in menus, cards and the sky)
+export const courseDefaults = (c, i = S.courses.indexOf(c)) => { c.icon ??= GLYPHS[(i < 0 ? S.courses.length : i) % GLYPHS.length]; c.color ??= PALETTE[(i < 0 ? S.courses.length : i) % PALETTE.length]; return c; };
 function migrate() {
-  S.trash ??= []; S.settings ??= { goal: 10 };
+  S.trash ??= []; S.settings ??= { goal: 10 }; S.badges ??= {};
+  S.courses.forEach((c, i) => courseDefaults(c, i));
   S.version = 2;
 }
 let timer;

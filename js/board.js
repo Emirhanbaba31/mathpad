@@ -2,6 +2,7 @@
 export const COLORS = ['#f4f4f5', '#9ca3af', '#ff6b6b', '#5ab0ff', '#5be49b', '#ffd166'];
 const PRINT = { '#f4f4f5': '#111111', '#9ca3af': '#555555', '#ff6b6b': '#dc2626', '#5ab0ff': '#1d4ed8', '#5be49b': '#15803d', '#ffd166': '#b7791f' };
 const FONT = '"Space Grotesk", system-ui, sans-serif';
+const paper = () => document.documentElement.dataset.theme === 'paper';
 
 const imgCache = new Map();
 function getImg(src, onload) {
@@ -169,7 +170,7 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
 
   function grid(c) {
     let s = 40 * view.z; while (s < 16) s *= 4;
-    c.fillStyle = 'rgba(255,255,255,.10)';
+    c.fillStyle = paper() ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.10)';
     const w = base.width / dpr, h = base.height / dpr, r = Math.max(1, view.z > .6 ? 1.2 : .9);
     for (let x = ((view.x % s) + s) % s; x < w; x += s)
       for (let y = ((view.y % s) + s) % s; y < h; y += s) c.fillRect(x * dpr, y * dpr, r * dpr, r * dpr);
@@ -182,18 +183,19 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     if (dirty) {
       dirty = false;
       bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, base.width, base.height);
+      if (paper()) { bctx.fillStyle = '#fbfaf6'; bctx.fillRect(0, 0, base.width, base.height); }
       grid(bctx); worldTf(bctx);
-      for (const el of B.els) drawEl(bctx, el, null, reload);
+      for (const el of B.els) drawEl(bctx, el, paper() ? PRINT : null, reload);
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
     ctx.drawImage(base, 0, 0);
     worldTf(ctx);
-    if (draft) drawEl(ctx, draft);
+    if (draft) drawEl(ctx, draft, paper() ? PRINT : null);
     if (B.sel) {
       const [a, b, c, d] = bbox(B.sel), p = 6 / view.z, hs = 12 / view.z;
-      ctx.setLineDash([6 / view.z, 4 / view.z]); ctx.lineWidth = 1.2 / view.z; ctx.strokeStyle = '#fff';
+      ctx.setLineDash([6 / view.z, 4 / view.z]); ctx.lineWidth = 1.2 / view.z; ctx.strokeStyle = paper() ? '#111' : '#fff';
       ctx.strokeRect(a - p, b - p, c - a + 2 * p, d - b + 2 * p); ctx.setLineDash([]);
-      ctx.fillStyle = '#fff'; ctx.fillRect(c + p - hs / 2, d + p - hs / 2, hs, hs);
+      ctx.fillStyle = paper() ? '#111' : '#fff'; ctx.fillRect(c + p - hs / 2, d + p - hs / 2, hs, hs);
     }
   }
 
@@ -366,7 +368,7 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     thumb: () => renderTo(B.els, { box: [360, 230], bg: '#0b0b0e', map: null }),
     destroy() {
       ro.disconnect(); cancelAnimationFrame(raf);
-      removeEventListener('keydown', key); removeEventListener('keyup', keyUp);
+      removeEventListener('keydown', key); removeEventListener('keyup', keyUp); removeEventListener('mp-theme', reload);
       textBox?.blur();
     },
   };
@@ -382,7 +384,7 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     else if (!mod && !e.altKey && keys[e.key.toLowerCase()]) api.setTool(keys[e.key.toLowerCase()]);
   }
   const keyUp = e => { if (e.key === ' ') spaceDown = false; };
-  addEventListener('keydown', key); addEventListener('keyup', keyUp);
+  addEventListener('keydown', key); addEventListener('keyup', keyUp); addEventListener('mp-theme', reload);
   cv.addEventListener('pointerdown', down);
   cv.addEventListener('pointermove', moveEv);
   cv.addEventListener('pointerup', up);

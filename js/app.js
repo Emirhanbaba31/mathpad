@@ -4,6 +4,9 @@ import { createBoard, renderTo, COLORS } from './board.js';
 import * as T from './tools.js';
 import { $, $$, esc, modal, confirmBox, toast, icon, logo, download, loadScript } from './ui.js';
 import * as fx from './fx.js';
+import { astronaut, mountTutor, keyCard } from './astro.js';
+import { mountSky, galaxyCalendar, scopeChart } from './sky.js';
+import * as badges from './badges.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
@@ -11,6 +14,12 @@ let cleanup = null, installEvt = null, pendingFiles = null;
 
 // ---------- helpers ----------
 const STATUS = { open: 'Açık', solved: 'Çözüldü', review: 'Tekrar' };
+const glyph = c => c ? `<i class="cglyph" style="--cc:${c.color || '#f4f4f5'}" aria-hidden="true">${esc(c.icon || '•')}</i>` : '';
+// course card planet: size follows study time, one moon per 5 problems
+const planetSvg = (c, secs, n) => { const r = 9 + Math.min(15, secs / 3600 * 3), moons = Math.min(4, Math.ceil(n / 5));
+  return `<svg class="planet loop" viewBox="-50 -50 100 100" aria-hidden="true"><g transform="rotate(-18)"><ellipse rx="40" ry="11" class="pl-orbit"/>${Array.from({ length: moons }, (_, i) => `<g class="orb-x" style="--rx:40px;--ry:11px;--d:${4 + i * 2.3}s;animation-delay:-${i * 1.7}s"><g class="orb-y"><circle r="2.2" class="pl-moon"/></g></g>`).join('')}</g><circle r="${r.toFixed(1)}" class="pl-body" style="--cc:${c.color}"/><text class="pl-glyph" y="${(r * .36).toFixed(1)}" font-size="${(r * 1.05).toFixed(1)}" text-anchor="middle">${esc(c.icon)}</text></svg>`; };
+const identityFields = c => `<div class="lbl">Simge<div class="pick">${db.GLYPHS.map(g => `<label class="pick-g"><input type="radio" name="icon" value="${g}" ${c.icon === g ? 'checked' : ''}><span>${g}</span></label>`).join('')}</div></div>
+  <div class="lbl">Renk<div class="pick">${db.PALETTE.map(col => `<label class="pick-c" style="--cc:${col}"><input type="radio" name="color" value="${col}" ${c.color === col ? 'checked' : ''}><span></span></label>`).join('')}</div></div>`;
 const pad2 = n => String(n).padStart(2, '0');
 const dur = s => { s = s || 0; const h = s / 3600 | 0, m = (s % 3600) / 60 | 0; return h ? `${h}:${pad2(m)}:${pad2(s % 60)}` : `${pad2(m)}:${pad2(s % 60)}`; };
 const hm = s => { s = s || 0; const h = s / 3600 | 0, m = Math.round((s % 3600) / 60); return h ? `${h} sa ${m} dk` : `${m} dk`; };
@@ -96,12 +105,12 @@ async function newProblem() {
 async function addCourse() {
   const r = await modal('Yeni ders', `<label>Ders adı<input class="inp" name="name" required placeholder="örn. Termodinamik, Statik, Devre Analizi II" autocomplete="off"></label>`, { ok: 'Ekle' });
   if (!r?.name.trim()) return;
-  const c = { id: uid(), name: r.name.trim() };
+  const c = db.courseDefaults({ id: uid(), name: r.name.trim() });
   S.courses.push(c); persist(); location.hash = '#/c/' + c.id;
 }
 
 async function editCourse(c) {
-  const p = modal('Dersi düzenle', `<label>Ders adı<input class="inp" name="name" value="${esc(c.name)}" required></label>
+  const p = modal('Dersi düzenle', `<label>Ders adı<input class="inp" name="name" value="${esc(c.name)}" required></label>${identityFields(c)}
     <button type="button" class="btn" data-share>${icon('download')} Bu dersi paylaş (.mathpad dosyası)</button>
     <p class="mute small">Arkadaşın dosyayı açınca ders, soruları ve çizimleriyle birlikte onun MathPad'ine eklenir; kendi verilerine dokunulmaz.</p>
     <button type="button" class="btn danger ghost-danger" data-del>${icon('trash')} Dersi ve sorularını sil</button>`);
@@ -119,7 +128,7 @@ async function editCourse(c) {
     toast(`"${c.name}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); route(); nav(); toast('Geri alındı ✦'); } });
   };
   const r = await p;
-  if (r?.name?.trim()) { c.name = r.name.trim(); persist(); route(); }
+  if (r?.name?.trim()) { c.name = r.name.trim(); c.icon = r.icon || c.icon; c.color = r.color || c.color; persist(); route(); }
 }
 
 function celebrate() {
@@ -127,6 +136,13 @@ function celebrate() {
   toast(n === goal ? `Günlük hedef tamam! ${n}/${goal} ✦` : `Çözüldü ✦  Bugün ${n}/${goal}`);
   if (n === goal) { fx.supernova(); fx.sound('goal'); } else { fx.shootingStar(); fx.sound('solve'); }
   navigator.vibrate?.(n === goal ? [30, 60, 30] : 20);
+  const byDay = solvedByDay();
+  const fresh = badges.check({
+    total: S.problems.filter(p => p.status === 'solved').length, streak: streak(byDay), today: n, goal, hour: new Date().getHours(),
+    courseDone: S.courses.some(c => { const ps = S.problems.filter(p => p.course === c.id); return ps.length >= 10 && ps.every(p => p.status === 'solved'); }),
+  });
+  // one big reveal per solve (the rarest new badge); the rest are mentioned, not paraded
+  if (fresh.length) setTimeout(() => { badges.reveal(fresh.at(-1)); if (fresh.length > 1) setTimeout(() => toast(`+${fresh.length - 1} rozet daha kazandın ✦ Panelde gör`), 4400); }, 1300);
 }
 
 // Opens a .mathpad file: a shared course is merged in; a full backup replaces everything (after asking).
@@ -228,7 +244,12 @@ function applyPrefs() {
   const h = document.documentElement;
   h.dataset.motion = S.settings.motion || 'full';
   h.dataset.sound = S.settings.sound || 'off';
+  h.dataset.theme = S.settings.theme || 'space';
+  h.style.setProperty('--acc', S.settings.accent || (h.dataset.theme === 'aurora' ? '#7cf5c8' : '#f4f4f5'));
+  dispatchEvent(new Event('mp-theme'));
 }
+const THEMES = [['space', 'Derin Uzay'], ['paper', 'Kağıt'], ['night', 'Gece Gözlem'], ['aurora', 'Aurora']];
+const ACCENTS = ['#f4f4f5', '#7dd3fc', '#c4b5fd', '#fde68a', '#7cf5c8', '#fca5a5'];
 
 // ---------- pomodoro ----------
 const pomo = { total: 25 * 60, left: 25 * 60, end: 0, iv: 0 };
@@ -278,7 +299,7 @@ function nav() {
     <div class="nav-courses">${S.courses.map(c => {
       const n = S.problems.filter(p => p.course === c.id).length;
       const on = (here === 'c' && b === c.id) || (here === 'p' && S.problems.find(p => p.id === b)?.course === c.id);
-      return `<a href="#/c/${c.id}" class="nav-sub ${on ? 'on' : ''}"><span>${esc(c.name)}</span><i>${n || ''}</i></a>`;
+      return `<a href="#/c/${c.id}" class="nav-sub ${on ? 'on' : ''}"><span>${glyph(c)}${esc(c.name)}</span><i>${n || ''}</i></a>`;
     }).join('')}<button class="nav-sub add" data-act="add-course">${icon('plus')} Ders ekle</button></div>
     ${link('#/review', 'review', 'Tekrar', here === 'review', rev ? `<i class="count">${rev}</i>` : '')}
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
@@ -295,7 +316,7 @@ function home() {
   const total = S.problems.filter(p => p.status === 'solved').length, st = streak(byDay);
   const hour = new Date().getHours(), greet = hour < 6 ? 'Gece mesaisi' : hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi çalışmalar' : 'İyi akşamlar';
   const recent = [...S.problems].sort((a, b) => (b.updated || 0) - (a.updated || 0)).slice(0, 6);
-  const C = 2 * Math.PI * 52, frac = Math.min(1, n / goal);
+  const C = 2 * Math.PI * 52, frac = Math.min(1, n / goal), gal = galaxyCalendar(byDay), bd = badges.row();
 
   view.innerHTML = `<div class="page">
     <svg class="orbit-deco loop" viewBox="-200 -200 400 400" aria-hidden="true"><g transform="rotate(-18)">
@@ -320,14 +341,18 @@ function home() {
         <div class="card pad kpi">${icon('check')}<b class="mono" data-count="${total}">${total}</b><span>toplam çözülen</span></div>
       </div>
       <div class="card pad chart-card"><div class="card-h"><h3>Son 14 gün</h3><span class="mute small">bu hafta ${hm(weekTime)}</span></div>
-        <div class="bars">${days.map((d, i) => `<div class="bar ${dayKey(d) === today ? 'today' : ''}" style="--i:${i}" title="${d.toLocaleDateString('tr')}: ${counts[i]} soru"><span class="mono">${counts[i] || ''}</span><i style="height:${counts[i] / max * 100}%"></i><em>${d.getDate()}</em></div>`).join('')}
-          <div class="goal-line" style="bottom:calc(${goal / max} * (100% - 34px) + 18px)"><span>hedef</span></div></div></div>
+        ${scopeChart(days, counts, goal)}</div>
       <div class="card pad pomo">
         <div class="card-h"><h3>Odak sayacı</h3><span class="mute small">bugün ${S.pomos[today] || 0} seans</span></div>
         <div class="pomo-body"><svg viewBox="0 0 100 100" class="pomo-ring"><circle cx="50" cy="50" r="45" class="ring-bg"/><circle cx="50" cy="50" r="45" class="ring-fg" data-pomo-ring style="stroke-dasharray:283"/><circle cx="50" cy="50" r="45" class="ring-comet loop pomo-comet" pathLength="100"/></svg><b class="mono" data-pomo-t></b></div>
         <div class="row center"><button class="chip" data-pomo-m="25">25 dk</button><button class="chip" data-pomo-m="50">50 dk</button><button class="chip" data-pomo-m="5">5 dk mola</button></div>
         <button class="btn primary wide" data-pomo-go></button>
       </div>
+      <div class="card sky-card"><div class="card-h pad-x"><h3>Senin gökyüzün</h3><span class="mute small">${S.problems.filter(p => p.status === 'solved').length} yıldız · her ders bir takımyıldız</span></div>
+        <div class="sky-wrap"><canvas class="sky" aria-label="Çözdüğün sorular yıldız olarak"></canvas><div class="sky-tip" hidden></div>
+        ${S.problems.some(p => p.status === 'solved' || p.status === 'review') ? '' : '<p class="sky-empty mute">İlk soruyu çözdüğünde burada ilk yıldızın doğacak ✦</p>'}</div></div>
+      <div class="card pad galaxy-card"><div class="card-h"><h3>Yıllık galaksi</h3><span class="mute small">son 12 ayda ${gal.total} soru</span></div><div class="galaxy-scroll">${gal.svg}</div></div>
+      <div class="card pad badges-card"><div class="card-h"><h3>Rozetler</h3><span class="mute small">${bd.n}/${badges.BADGES.length}</span></div><div class="badge-row">${bd.html}</div></div>
       <div class="card pad cprog"><div class="card-h"><h3>Dersler</h3><a class="mute small" href="#/courses">tümü →</a></div>
         ${S.courses.map(c => { const ps = S.problems.filter(p => p.course === c.id), s = ps.filter(p => p.status === 'solved').length;
           return `<a class="cp-row" href="#/c/${c.id}"><span>${esc(c.name)}</span><span class="mono mute">${s}/${ps.length}</span><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div></a>`; }).join('') || '<p class="mute">Ders yok</p>'}
@@ -341,6 +366,7 @@ function home() {
     const m = e.target.closest('[data-pomo-m]'); if (m) pomoSet(+m.dataset.pomoM);
     if (e.target.closest('[data-pomo-go]')) pomoToggle();
   };
+  return mountSky($('canvas.sky'), { courses: S.courses, problems: S.problems, onOpen: id => location.hash = '#/p/' + id });
 }
 
 function pcard(p) {
@@ -360,7 +386,7 @@ function course(id) {
   const topics = db.topicsOf(id);
   let filter = pref('filter') || 'all', topic = '', q = '';
   view.innerHTML = `<div class="page">
-    <header class="page-h"><div><p class="eyebrow">Ders</p><h1>${esc(c.name)}</h1><p class="mute">${solved}/${ps.length} çözüldü${rev ? ` · ${rev} tekrar` : ''}</p></div>
+    <header class="page-h"><div><p class="eyebrow">Ders</p><h1>${glyph(c)} ${esc(c.name)}</h1><p class="mute">${solved}/${ps.length} çözüldü${rev ? ` · ${rev} tekrar` : ''}</p></div>
       <div class="row"><a class="btn" href="#/tools/formulas/${id}">${icon('sigma')}<span class="hide-s">Formüller</span></a><button class="icon-btn" data-act="edit-course" aria-label="Dersi düzenle">${icon('dots')}</button><button class="btn primary" data-act="new">${icon('plus')} Yeni soru</button></div></header>
     <div class="progress lg"><i style="width:${ps.length ? solved / ps.length * 100 : 0}%"></i></div>
     <div class="filters">
@@ -374,7 +400,7 @@ function course(id) {
   function render() {
     const rows = ps.filter(p => (filter === 'all' || p.status === filter) && (!topic || p.topic === topic) && (!q || (p.title + ' ' + p.topic).toLocaleLowerCase('tr').includes(q)));
     list.className = rows.length ? 'pgrid' : '';
-    list.innerHTML = rows.map(pcard).join('') || `<div class="empty card pad">${logo('float')}<p>${ps.length ? 'Bu filtrede soru yok.' : 'Bu derste henüz soru yok.'}</p>${ps.length ? '' : `<button class="btn primary" data-act="new">${icon('plus')} Soru ekle</button>`}</div>`;
+    list.innerHTML = rows.map(pcard).join('') || `<div class="empty card pad">${astronaut('float wave')}<p>${ps.length ? 'Bu filtrede soru yok.' : 'Bu derste henüz soru yok.'}</p>${ps.length ? '' : `<button class="btn primary" data-act="new">${icon('plus')} Soru ekle</button>`}</div>`;
     loadThumbs(list);
   }
   $('[data-f]').onclick = e => { const k = e.target.dataset.k; if (!k) return; filter = k; pref('filter', k); $$('[data-f] button').forEach(b => b.classList.toggle('on', b === e.target)); render(); };
@@ -420,7 +446,7 @@ function courses() {
     <div class="cgrid">${S.courses.map(c => {
       const ps = S.problems.filter(p => p.course === c.id), s = ps.filter(p => p.status === 'solved').length, r = ps.filter(p => p.status === 'review').length;
       const t = ps.reduce((a, p) => a + (p.secs || 0), 0);
-      return `<a class="card pad ccard" href="#/c/${c.id}"><h3>${esc(c.name)}</h3><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div>
+      return `<a class="card pad ccard" href="#/c/${c.id}" style="--cc:${c.color}">${planetSvg(c, t, ps.length)}<h3>${esc(c.name)}</h3><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div>
         <div class="cc-stats mono small"><span>${s}/${ps.length} çözüldü</span>${r ? `<span>${r} tekrar</span>` : ''}<span>${hm(t)}</span></div></a>`;
     }).join('')}<button class="card pad ccard add" data-act="add-course">${icon('plus')}<span>Ders ekle</span><small class="mute">Her mühendislik dersi için</small></button></div></div>`;
 }
@@ -456,7 +482,10 @@ async function settings() {
       <div class="row"><input class="inp mono" type="number" min="1" max="500" value="${S.settings.goal}" data-goal style="max-width:120px"><span class="mute">soru / gün</span></div></div>
     <div class="card pad set"><h3>Görünüm ve ses</h3>
       <div class="set-row"><span>Hareket ve animasyonlar</span><div class="seg" data-pref="motion">${[['full', 'Tam'], ['reduced', 'Azaltılmış'], ['off', 'Kapalı']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.motion || 'full') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <div class="set-row"><span>Tema</span><div class="seg" data-theme-pick>${THEMES.map(([k, l]) => `<button data-v="${k}" class="${(S.settings.theme || 'space') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <div class="set-row"><span>Vurgu rengi <small class="mute">(halkalar, ilerleme, ışıklar)</small></span><div class="pick" data-accent>${ACCENTS.map(a => `<button class="pick-c ${(S.settings.accent || '#f4f4f5') === a ? 'on' : ''}" style="--cc:${a}" data-v="${a}" aria-label="Vurgu ${a}"><span></span></button>`).join('')}</div></div>
       <div class="set-row"><span>Efekt sesleri <small class="mute">(çözüldü, hedef)</small></span><div class="seg" data-pref="sound">${[['off', 'Kapalı'], ['on', 'Açık']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.sound || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div></div>
+    <div class="card pad set" data-ai></div>
     ${window.desktop ? `<div class="card pad set"><h3>Masaüstü uygulaması</h3><p class="mute" data-ver>MathPad</p>
       <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button></div></div>`
     : `<div class="card pad set"><h3>Uygulama olarak yükle</h3>
@@ -481,6 +510,17 @@ async function settings() {
   $('[data-backup]').onclick = async () => { await backupNow(); toast('Yedek indirildi ✦'); };
   $('[data-backups]')?.addEventListener('click', () => desktop.openBackups());
   renderTrash($('[data-trash]'));
+  keyCard($('[data-ai]'));
+  $('[data-theme-pick]').onclick = e => {
+    const v = e.target.closest('[data-v]')?.dataset.v; if (!v || v === (S.settings.theme || 'space')) return;
+    $$('[data-theme-pick] button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    fx.scan(() => { S.settings.theme = v; if (v === 'aurora' && !S.settings.accent) S.settings.accent = '#7cf5c8'; persist(); applyPrefs(); });
+  };
+  $('[data-accent]').onclick = e => {
+    const v = e.target.closest('[data-v]')?.dataset.v; if (!v) return;
+    S.settings.accent = v; persist(); applyPrefs();
+    $$('[data-accent] button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  };
   renderStorage($('[data-storage]'), est, persisted);
   $('[data-restore]').onchange = async e => { const f = e.target.files[0]; if (f) restoreBackup(f.name, await f.text()); };
   $$('[data-pref]').forEach(seg => seg.onclick = e => {
@@ -516,11 +556,12 @@ async function problem(id) {
   view.innerHTML = `<div class="pb">
     <header class="pb-top">
       <a class="icon-btn" href="#/c/${p.course}" aria-label="Derse dön">${icon('back')}</a>
-      <div class="pb-title"><input class="title-in" value="${esc(p.title)}" aria-label="Soru başlığı" maxlength="120"><button class="crumb" data-meta>${esc(c?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}</button></div>
+      <div class="pb-title"><input class="title-in" value="${esc(p.title)}" aria-label="Soru başlığı" maxlength="120"><button class="crumb" data-meta>${glyph(c)}${esc(c?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}</button></div>
       <span class="pb-time mono" title="Bu soruya harcanan süre (5 dk hareketsizlikte durur)">${icon('clock')}<span data-t>${dur(p.secs)}</span></span>
       <div class="seg status" data-status>${Object.entries(STATUS).map(([k, l]) => `<button data-s="${k}" class="${p.status === k ? 'on' : ''} s-${k}">${k === 'solved' ? icon('check') : k === 'review' ? icon('review') : icon('pen')}<span>${l}</span></button>`).join('')}</div>
       <button class="icon-btn" data-export title="PDF / PNG olarak kaydet">${icon('download')}</button>
       <button class="icon-btn" data-side title="Hesap makinesi & formüller">${icon('calc')}</button>
+      <button class="icon-btn" data-focus title="Odak modu (F)" aria-label="Odak modu">${icon('star')}</button>
       <button class="icon-btn" data-del title="Soruyu sil">${icon('trash')}</button>
     </header>
     <div class="pb-main">
@@ -543,10 +584,11 @@ async function problem(id) {
         <input type="file" accept="image/*,application/pdf" multiple hidden data-file>
       </div>
       <aside class="pb-side" ${pref('side') === '1' && matchMedia('(min-width: 1101px)').matches ? '' : 'hidden'}>
-        <div class="row"><div class="seg"><button class="on" data-tab="calc">${icon('calc')} Hesap</button><button data-tab="fx">${icon('sigma')} Formüller</button></div>
+        <div class="row"><div class="seg"><button data-tab="nova">✦ Nova</button><button class="on" data-tab="calc">${icon('calc')} Hesap</button><button data-tab="fx">${icon('sigma')} Formül</button></div>
         <button class="icon-btn" data-close-side aria-label="Paneli kapat" style="margin-left:auto">${icon('x')}</button></div>
-        <div data-pane="calc"></div><div data-pane="fx" class="note" hidden></div>
+        <div data-pane="nova" hidden></div><div data-pane="calc"></div><div data-pane="fx" class="note" hidden></div>
       </aside>
+      <button class="astro-fab" data-nova aria-label="Astronot asistan Nova'yı aç" title="Nova'ya sor">${astronaut('sm')}</button>
     </div></div>`;
 
   const els = (await db.get('b:' + id)) || [];
@@ -580,7 +622,7 @@ async function problem(id) {
   $('.toolbar').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.tool) { board.setTool(b.dataset.tool); pref('tool', b.dataset.tool); }
-    else if (b.dataset.color) { board.setColor(b.dataset.color); $$('.sw').forEach(s => s.classList.toggle('on', s === b)); if (['eraser', 'select'].includes(board.tool)) board.setTool('pen'); }
+    else if (b.dataset.color) { board.setColor(b.dataset.color); wrap.style.setProperty('--pen', b.dataset.color); $$('.sw').forEach(s => s.classList.toggle('on', s === b)); if (['eraser', 'select'].includes(board.tool)) board.setTool('pen'); }
     else if (b.dataset.w) { board.setWidth(+b.dataset.w); $$('.wd').forEach(s => s.classList.toggle('on', s === b)); }
     else if ('undo' in b.dataset) board.undo();
     else if ('redo' in b.dataset) board.redo();
@@ -656,11 +698,39 @@ async function problem(id) {
   mountSide();
   $('[data-side]').onclick = () => { side.hidden = !side.hidden; pref('side', side.hidden ? '0' : '1'); mountSide(); };
   $('[data-close-side]').onclick = () => { side.hidden = true; pref('side', '0'); };
-  side.querySelector('.seg').onclick = e => {
-    const t = e.target.closest('[data-tab]')?.dataset.tab; if (!t) return;
+  let stopTutor = null;
+  const tab = t => {
     side.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
     side.querySelectorAll('[data-pane]').forEach(x => x.hidden = x.dataset.pane !== t);
+    if (t === 'nova' && !stopTutor) stopTutor = mountTutor($('[data-pane=nova]'), {
+      problem: p, courseName: db.courseOf(p)?.name,
+      getImage: async () => (await board.export({ width: 1100 }))?.toDataURL('image/jpeg', .85) ?? null,
+    });
   };
+  side.querySelector('.seg').onclick = e => { const t = e.target.closest('[data-tab]')?.dataset.tab; if (t) tab(t); };
+  $('[data-nova]').onclick = () => { side.hidden = false; mountSide(); tab('nova'); $('[data-pane=nova] textarea')?.focus(); };
+
+  // focus mode: everything but the board slips away; hyperspace jump in and out
+  const focus = on => {
+    if (on === document.body.classList.contains('focus')) return;
+    fx.hyperspace(!on); document.body.classList.toggle('focus', on); fx.ambience(on);
+    if (on) toast('Odak modu ✦ Çıkmak için Esc', null);
+  };
+  $('[data-focus]').onclick = () => focus(true);
+  const focusKey = e => {
+    if (e.target.closest?.('input, textarea')) return;
+    if (e.key === 'Escape') focus(false);
+    if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) focus(!document.body.classList.contains('focus'));
+  };
+  addEventListener('keydown', focusKey);
+  // soft light under the pen, in the pen's colour
+  const glow = document.createElement('i'); glow.className = 'pen-glow'; wrap.append(glow);
+  wrap.addEventListener('pointermove', e => {
+    if (e.pointerType === 'touch') return;
+    const r = wrap.getBoundingClientRect(); glow.style.transform = `translate(${e.clientX - r.left}px, ${e.clientY - r.top}px)`;
+    glow.classList.toggle('on', ['pen', 'hl'].includes(board.tool));
+  });
+  wrap.addEventListener('pointerleave', () => glow.classList.remove('on'));
 
   // time tracking: counts while page visible and user active in last 5 min
   let last = Date.now();
@@ -675,7 +745,8 @@ async function problem(id) {
   }, 1000);
 
   return () => {
-    clearInterval(iv); board.destroy(); persist();
+    clearInterval(iv); board.destroy(); persist(); stopTutor?.();
+    removeEventListener('keydown', focusKey); document.body.classList.remove('focus'); fx.ambience(false);
     document.removeEventListener('paste', onPaste);
     view.removeEventListener('pointerdown', act); removeEventListener('keydown', act);
     if (saveT) save();
