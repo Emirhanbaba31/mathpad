@@ -10,6 +10,7 @@ import { SYMBOLS, symbolSvg } from './symbols.js';
 import { SHAPE_NAMES } from './shapes.js';
 import * as badges from './badges.js';
 import * as sync from './sync.js';
+import * as upd from './update.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
@@ -592,6 +593,7 @@ async function settings() {
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = matchMedia('(display-mode: standalone)').matches;
   view.innerHTML = `<div class="page narrow"><header class="page-h"><div><p class="eyebrow">Ayarlar</p><h1>Ayarlar</h1></div></header>
+    <div class="card pad set"><h3>Sürüm</h3><div class="row wrap"><p class="mute" style="margin:0">MathPad ${upd.VERSION} · ${{ desktop: 'Windows', android: 'Android', web: 'Web' }[upd.platform()]}</p><button class="btn" data-upcheck>${icon('rotate')} Güncellemeleri denetle</button></div></div>
     <div class="card pad set"><h3>Günlük hedef</h3><p class="mute">Panelde her gün kaç soru çözmeyi hedeflediğin.</p>
       <div class="row"><input class="inp mono" type="number" min="1" max="500" value="${S.settings.goal}" data-goal style="max-width:120px"><span class="mute">soru / gün</span></div></div>
     <div class="card pad set"><h3>Görünüm ve ses</h3>
@@ -602,7 +604,7 @@ async function settings() {
     <div class="card pad set" data-gd></div>
     <div class="card pad set" data-ai></div>
     ${window.desktop ? `<div class="card pad set"><h3>Masaüstü uygulaması</h3><p class="mute" data-ver>MathPad</p>
-      <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button><button class="btn ghost" data-upcheck>${icon('review')} Güncellemeleri denetle</button></div></div>`
+      <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button></div></div>`
     : `<div class="card pad set"><h3>Uygulama olarak yükle</h3>
       ${standalone ? '<p>Zaten uygulama olarak açıksın ✦</p>' : installEvt ? `<p class="mute">Masaüstüne / ana ekrana ekle, internet olmadan da çalışsın.</p><button class="btn primary" data-act="install">${icon('install')} Yükle</button>`
       : ios ? '<p class="mute">iPad/iPhone: Safari\'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>.</p>' : '<p class="mute">Tarayıcının adres çubuğundaki <b>yükle</b> simgesine bas (Chrome/Edge). Android\'de menü → <b>Uygulamayı yükle</b>.</p>'}</div>`}
@@ -645,9 +647,13 @@ async function settings() {
     seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
     if (seg.dataset.pref === 'sound' && v === 'on') fx.sound('solve');
   });
+  $('[data-upcheck]').onclick = async e => {
+    const b = e.currentTarget; b.disabled = true;
+    try { const r = await upd.check(); toast(r.msg, r.action); } catch (err) { toast(err.message || 'Denetlenemedi, internetini kontrol et'); }
+    b.disabled = false;
+  };
   if (window.desktop) {
-    desktop.info().then(i => $('[data-ver]').textContent = `Sürüm ${i.version} · Veriler: ${i.dataDir} · Güncellemeler otomatik gelir`);
-    $('[data-upcheck]').onclick = async e => { e.currentTarget.disabled = true; const v = await desktop.checkUpdate(); toast(v && v !== (await desktop.info()).version ? `${v} bulundu, arka planda iniyor` : 'MathPad güncel ✦'); e.currentTarget.disabled = false; };
+    desktop.info().then(i => $('[data-ver]').textContent = `Sürüm ${i.version} · Veriler: ${i.dataDir} · Güncellemeler otomatik iner`);
     $('[data-datadir]').onclick = () => desktop.openDataDir();
     $('[data-prebackup]').onclick = () => $('[data-backup]').click();
     $('[data-uninstall]').onclick = async () => {
