@@ -25,7 +25,7 @@ export function evaluate(expr, extra) { init(); return math.evaluate(prep(expr),
 
 const num = x => String(+x.toPrecision(6));
 const PFX = { 12: 'T', 9: 'G', 6: 'M', 3: 'k', '-3': 'm', '-6': 'µ', '-9': 'n', '-12': 'p', '-15': 'f' };
-const eng = x => {
+export const eng = x => {
   const a = Math.abs(x); if (!a || a >= 1e15 || a < 1e-15 || (a >= 1 && a < 1000)) return '';
   const e = Math.floor(Math.log10(a) / 3) * 3; return PFX[e] ? `${+(x / 10 ** e).toPrecision(5)}${PFX[e]}` : '';
 };
@@ -170,7 +170,7 @@ function ticks(a, b, n = 6) {
 const fmtTick = v => { const a = Math.abs(v); return a && (a >= 1e4 || a < 1e-3) ? v.toExponential(0) : String(+v.toPrecision(4)); };
 export const PLOT_COLORS = ['#f4f4f5', '#5ab0ff', '#ff6b6b', '#5be49b', '#ffd166', '#c084fc'];
 
-function plot(cv, series, { xlog = false, x0, x1, ylabel = '', height = 300 }) {
+export function plot(cv, series, { xlog = false, x0, x1, ylabel = '', height = 300 }) {
   const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = height;
   cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px';
   const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);

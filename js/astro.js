@@ -63,6 +63,7 @@ const ACTIONS = [
   ['check', 'Çözümümü kontrol et', 'Tahtadaki çözümümü kontrol et: doğru mu, hata varsa nerede? Hatayı göster ama soruyu baştan çözme.'],
   ['steps', 'Adım adım çöz', 'Bu soruyu adım adım çöz; her adımı kısaca açıkla.'],
   ['explain', 'Konuyu anlat', 'Bu sorunun konusunu kısa ve sezgisel anlat, kullanılan temel formülleri ver.'],
+  ['similar', 'Benzer soru üret', 'Bu soruya benzeyen ama sayıları ve koşulları farklı yeni bir alıştırma sorusu yaz. Çözümünü verme, sadece soruyu yaz; en sonda tek satırda **Cevap:** ile sadece sonucu ver.'],
 ];
 
 function friendlyError(err) {
@@ -85,7 +86,7 @@ function friendlyError(err) {
 
 // One streamed answer. hist: [{role:'user'|'assistant', text}], last entry is the new question.
 // Returns { text, refused }. onText(snapshot) is called as text arrives.
-async function ask({ hist, img, onText, signal }) {
+async function ask({ hist, img, onText = () => { }, signal, system = SYSTEM }) {
   const p = provider(), m = model(p), key = getKey(p);
   const lastText = hist.at(-1).text;
   if (p === 'gemini') {
@@ -95,7 +96,7 @@ async function ask({ hist, img, onText, signal }) {
     }));
     const res = await fetch(`${GEMINI}/models/${encodeURIComponent(m)}:streamGenerateContent?alt=sse`, {
       method: 'POST', signal, headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents, generationConfig: { maxOutputTokens: 8192 } }),
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { maxOutputTokens: 8192 } }),
     });
     if (!res.ok) throw await geminiError(res);
     const reader = res.body.getReader(), dec = new TextDecoder();
@@ -123,7 +124,7 @@ async function ask({ hist, img, onText, signal }) {
   }));
   const modern = /claude-(opus|sonnet|haiku)-5|fable|mythos/.test(m); // effort + server-side fallbacks only on these
   const stream = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true }).beta.messages.stream({
-    model: m, max_tokens: 16000, system: SYSTEM, messages,
+    model: m, max_tokens: 16000, system, messages,
     ...(modern && { output_config: { effort: 'medium' } }),
     ...(/^claude-(opus-5|opus-5-5|sonnet-5-5|fable-5-[12])$/.test(m) && { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }),
   }, { signal });
@@ -181,7 +182,7 @@ const modelOptions = (p, models) => {
 };
 
 // ---------- chat panel for one problem. getImage() → JPEG data URL of the board (or null) ----------
-export function mountTutor(el, { problem, courseName, getImage }) {
+export function mountTutor(el, { problem, courseName, getImage, onPin, onNewProblem }) {
   let hist = [], ctrl = null;
   el.innerHTML = `<div class="astro-chat">
     <div class="astro-head">${astronaut('sm wave')}<div><b>Nova</b><span class="mute small">astronot asistanın</span></div>
@@ -200,6 +201,13 @@ export function mountTutor(el, { problem, courseName, getImage }) {
   };
   sel.onchange = () => { const [k, m] = sel.value.split('|'); LS.set('mp.aiProvider', k); setModel(k, m); };
   fillModels();
+  const actions = text => `<div class="msg-acts"><button type="button" class="chip" data-pin>📌 Tahtaya iğnele</button><button type="button" class="chip" data-newq>${icon('plus')} Yeni soru yap</button></div>`;
+  log.onclick = e => {
+    const msg = e.target.closest('.msg'); if (!msg?.dataset.i) return;
+    const text = hist[+msg.dataset.i]?.text; if (!text) return;
+    if (e.target.closest('[data-pin]')) onPin?.(text);
+    if (e.target.closest('[data-newq]')) onNewProblem?.(text);
+  };
   const bubble = (role, html) => {
     const d = document.createElement('div'); d.className = `msg ${role}`; d.innerHTML = html;
     log.append(d); log.scrollTop = log.scrollHeight; return d;
@@ -207,7 +215,7 @@ export function mountTutor(el, { problem, courseName, getImage }) {
   const showAll = () => {
     log.innerHTML = '';
     if (!hist.length) bubble('assistant', `<p>Merhaba! Ben Nova ✦ Tahtana bakıp yardım edebilirim. Aşağıdan bir şey seç ya da sorunu yaz.</p>`);
-    for (const m of hist) bubble(m.role, m.role === 'user' ? `<p>${esc(m.label || m.text)}</p>` : renderNote(m.text));
+    hist.forEach((m, i) => { const b = bubble(m.role, m.role === 'user' ? `<p>${esc(m.label || m.text)}</p>` : renderNote(m.text) + actions()); b.dataset.i = i; });
   };
   db.get('ai:' + problem.id).then(h => { hist = Array.isArray(h) ? h : []; showAll(); });
 
@@ -225,7 +233,7 @@ export function mountTutor(el, { problem, courseName, getImage }) {
     try {
       const r = await ask({ hist: turn, img, signal: ctrl.signal, onText: snap => { out.className = 'msg assistant'; out.innerHTML = renderNote(snap); log.scrollTop = log.scrollHeight; } });
       const reply = r.refused ? 'Bu isteğe yardımcı olamıyorum. Soruyu farklı şekilde sormayı dener misin?' : r.text || '…';
-      out.className = 'msg assistant'; out.innerHTML = renderNote(reply);
+      out.className = 'msg assistant'; out.innerHTML = renderNote(reply) + actions(); out.dataset.i = hist.length + 1;
       hist.push(q, { role: 'assistant', text: reply, by: model() });
       await db.set('ai:' + problem.id, hist.slice(-40));
     } catch (err) {
@@ -301,4 +309,28 @@ export function mountRoamer(wrap, onOpen) {
     wrap.removeEventListener('pointerdown', down); removeEventListener('pointerup', up);
     removeEventListener('mp-theme', start); removeEventListener('resize', start);
   };
+}
+
+
+// ---------- one-shot helpers: auto-tagging a new problem, weekly coaching ----------
+const firstJson = t => { const m = /\{[\s\S]*\}/.exec(t || ''); try { return m ? JSON.parse(m[0]) : null; } catch { return null; } };
+
+// Reads the question photo and suggests { course, topic, title }. Returns null without a key or on any failure.
+export async function classify(imgB64, courseNames) {
+  if (!getKey() || !imgB64) return null;
+  const system = 'Mühendislik sorularını sınıflandıran bir asistansın. Sadece JSON döndür, başka hiçbir şey yazma.';
+  const text = `Fotoğraftaki soruyu incele. Şu derslerden en uygun olanı seç (yoksa en yakınını): ${courseNames.join(', ')}.\n`
+    + 'JSON biçimi: {"course": "ders adı listeden aynen", "topic": "2-4 kelimelik konu, örn. Thevenin eşdeğeri", "title": "en fazla 6 kelimelik kısa soru başlığı"}';
+  try {
+    const r = await ask({ hist: [{ role: 'user', text }], img: imgB64, system });
+    const j = firstJson(r.text);
+    return j && typeof j.course === 'string' ? { course: j.course.trim(), topic: String(j.topic || '').trim().slice(0, 60), title: String(j.title || '').trim().slice(0, 80) } : null;
+  } catch { return null; }
+}
+
+// Weekly coaching note from study statistics (text only, no images).
+export async function coach(summary) {
+  const system = `${SYSTEM}\n- Şimdi öğrencinin haftalık çalışma koçusun. Verilen istatistiklere bakarak 4-6 maddelik kısa, somut ve cesaretlendirici bir değerlendirme yaz: neler iyi gidiyor, hangi ders/konu ihmal ediliyor, bu hafta için 3 net öneri (ders + konu + kaç soru). Başlık kullanma.`;
+  const r = await ask({ hist: [{ role: 'user', text: summary }], system });
+  return r.refused ? null : r.text;
 }

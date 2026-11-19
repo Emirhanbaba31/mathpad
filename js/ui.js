@@ -93,6 +93,9 @@ const P = {
   side: 'M3 4h18v16H3z|M15 4v16',
   star: 'M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z',
   install: 'M12 3v12|M7 10l5 5 5-5|M4 21h16',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z|M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z',
+  rotate: 'M20 12a8 8 0 1 1-2.3-5.7|M20 4v5h-5',
+  atom: 'M12 12m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0|M12 3c4 0 7 4 7 9s-3 9-7 9-7-4-7-9 3-9 7-9z|M4 7.5c2-3.5 7-3 11.5 1.5S21 18.5 19 21|M20 7.5c-2-3.5-7-3-11.5 1.5S3 18.5 5 21',
 };
 // Animated logo: planet with a light running around its ring and a moon on a tilted orbit (CSS loops in app.css).
 export const logo = (cls = '') => `<svg class="logo loop ${cls}" viewBox="0 0 64 64" aria-hidden="true">

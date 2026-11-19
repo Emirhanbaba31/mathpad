@@ -4,13 +4,15 @@ import { createBoard, renderTo, COLORS } from './board.js';
 import * as T from './tools.js';
 import { $, $$, esc, modal, confirmBox, toast, icon, logo, download, loadScript } from './ui.js';
 import * as fx from './fx.js';
-import { astronaut, mountTutor, keyCard, mountRoamer } from './astro.js';
+import { astronaut, mountTutor, keyCard, mountRoamer, classify, coach, getKey } from './astro.js';
 import { mountSky, galaxyCalendar, scopeChart } from './sky.js';
+import { SYMBOLS, symbolSvg } from './symbols.js';
+import { SHAPE_NAMES } from './shapes.js';
 import * as badges from './badges.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
-let cleanup = null, installEvt = null, pendingFiles = null;
+let cleanup = null, installEvt = null, pendingFiles = null, update = null; // update: { state: 'downloading'|'ready', version } from the desktop shell
 
 // ---------- helpers ----------
 const STATUS = { open: 'Açık', solved: 'Çözüldü', review: 'Tekrar' };
@@ -87,6 +89,7 @@ function createProblem(course, { title = '', topic = '' } = {}, files = null) {
   S.problems.unshift(p); S.settings.lastCourse = course; persist();
   pendingFiles = files?.length ? files : null;
   location.hash = '#/p/' + p.id;
+  return p;
 }
 
 async function newProblem() {
@@ -303,8 +306,40 @@ function nav() {
     }).join('')}<button class="nav-sub add" data-act="add-course">${icon('plus')} Ders ekle</button></div>
     ${link('#/review', 'review', 'Tekrar', here === 'review', rev ? `<i class="count">${rev}</i>` : '')}
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
+    ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
-    <div class="nav-foot">${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}</div>`;
+    <div class="nav-foot">${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
+}
+
+// ---------- Nova's weekly coaching ----------
+function coachHtml() {
+  const c = S.coach, fresh = c && daysSince(c.at) < 7;
+  return `<div class="card-h"><h3 class="row">${astronaut('xs')} Nova'nın haftalık notu</h3>${c ? `<span class="mute small">${new Date(c.at).toLocaleDateString('tr')}</span>` : ''}</div>
+    ${c ? `<div class="note coach-note">${T.renderNote(c.text)}</div>` : `<p class="mute">Nova son haftanı inceleyip neyin iyi gittiğini, neyi ihmal ettiğini ve bu hafta ne çözmen gerektiğini söyler.</p>`}
+    <button class="btn ${fresh ? 'ghost' : 'primary'} small" data-coach-go>${icon('sparkle')} ${c ? 'Yeniden analiz et' : 'Haftalık analizimi yap'}</button>`;
+}
+function coachSummary() {
+  const week = Date.now() - 7 * 864e5, byDay = solvedByDay();
+  const lines = S.courses.map(c => {
+    const ps = S.problems.filter(p => p.course === c.id);
+    const solvedW = ps.filter(p => p.status === 'solved' && p.solvedAt > week).length, rev = ps.filter(p => p.status === 'review');
+    const secs = ps.filter(p => (p.updated || 0) > week).reduce((a, p) => a + (p.secs || 0), 0);
+    const topics = [...new Set(rev.map(p => p.topic).filter(Boolean))].slice(0, 4).join(', ');
+    return `- ${c.name}: toplam ${ps.length} soru, bu hafta ${solvedW} çözüldü, tekrar listesinde ${rev.length}${topics ? ` (konular: ${topics})` : ''}, bu hafta ${Math.round(secs / 60)} dk çalışıldı`;
+  });
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - 6 + i); return `${d.toLocaleDateString('tr', { weekday: 'short' })}: ${byDay[dayKey(d)] || 0}`; });
+  return `Haftalık çalışma özetim (günlük hedefim ${S.settings.goal} soru, serim ${streak(byDay)} gün):\nGünlere göre çözülen: ${days.join(', ')}\nDerslere göre:\n${lines.join('\n')}`;
+}
+async function runCoach() {
+  const card = $('[data-coach]'); if (!card) return;
+  if (!getKey()) return toast('Önce Ayarlar → Astronot asistan bölümünden bir API anahtarı ekle');
+  card.querySelector('[data-coach-go]').disabled = true;
+  card.querySelector('[data-coach-go]').innerHTML = `<span class="orbit-loader"></span> Nova inceliyor…`;
+  try {
+    const text = await coach(coachSummary());
+    if (text) { S.coach = { at: Date.now(), text }; persist(); }
+  } catch (err) { toast('Nova şu an cevap veremedi: ' + (err?.message || 'bilinmeyen hata')); }
+  if ($('[data-coach]')) $('[data-coach]').innerHTML = coachHtml();
 }
 
 // ---------- views ----------
@@ -353,6 +388,7 @@ function home() {
         ${S.problems.some(p => p.status === 'solved' || p.status === 'review') ? '' : '<p class="sky-empty mute">İlk soruyu çözdüğünde burada ilk yıldızın doğacak ✦</p>'}</div></div>
       <div class="card pad galaxy-card"><div class="card-h"><h3>Yıllık galaksi</h3><span class="mute small">son 12 ayda ${gal.total} soru</span></div><div class="galaxy-scroll">${gal.svg}</div></div>
       <div class="card pad badges-card"><div class="card-h"><h3>Rozetler</h3><span class="mute small">${bd.n}/${badges.BADGES.length}</span></div><div class="badge-row">${bd.html}</div></div>
+      <div class="card pad coach-card" data-coach>${coachHtml()}</div>
       <div class="card pad cprog"><div class="card-h"><h3>Dersler</h3><a class="mute small" href="#/courses">tümü →</a></div>
         ${S.courses.map(c => { const ps = S.problems.filter(p => p.course === c.id), s = ps.filter(p => p.status === 'solved').length;
           return `<a class="cp-row" href="#/c/${c.id}"><span>${esc(c.name)}</span><span class="mono mute">${s}/${ps.length}</span><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div></a>`; }).join('') || '<p class="mute">Ders yok</p>'}
@@ -365,6 +401,7 @@ function home() {
   view.onclick = e => {
     const m = e.target.closest('[data-pomo-m]'); if (m) pomoSet(+m.dataset.pomoM);
     if (e.target.closest('[data-pomo-go]')) pomoToggle();
+    if (e.target.closest('[data-coach-go]')) runCoach();
   };
   return mountSky($('canvas.sky'), { courses: S.courses, problems: S.problems, onOpen: id => location.hash = '#/p/' + id });
 }
@@ -472,6 +509,16 @@ function tools(tab = 'calc', cid) {
   return ({ calc: T.mountCalc, plot: T.mountPlot, matrix: T.mountMatrix, phasor: T.mountPhasor, resistor: T.mountResistor, formulas: e => T.mountFormulas(e, cid || currentCourse()) })[tab](el);
 }
 
+// Simulation center (EEE): each simulation lives in js/sim.js, loaded on first visit
+async function sim(id) {
+  const { SIMS, mountSim } = await import('./sim.js');
+  const cur = SIMS.find(x => x.id === id) || SIMS[0];
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Simülasyon merkezi</p><h1>${esc(cur.title)}</h1></div></header>
+    <div class="tabs">${SIMS.map(x => `<a href="#/sim/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
+    <div class="card pad tool-body sim-body" data-sim></div></div>`;
+  return mountSim($('[data-sim]'), cur.id);
+}
+
 async function settings() {
   const est = await navigator.storage?.estimate?.().catch(() => null);
   const persisted = await navigator.storage?.persisted?.().catch(() => false);
@@ -487,7 +534,7 @@ async function settings() {
       <div class="set-row"><span>Efekt sesleri <small class="mute">(çözüldü, hedef)</small></span><div class="seg" data-pref="sound">${[['off', 'Kapalı'], ['on', 'Açık']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.sound || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div></div>
     <div class="card pad set" data-ai></div>
     ${window.desktop ? `<div class="card pad set"><h3>Masaüstü uygulaması</h3><p class="mute" data-ver>MathPad</p>
-      <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button></div></div>`
+      <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button><button class="btn ghost" data-upcheck>${icon('review')} Güncellemeleri denetle</button></div></div>`
     : `<div class="card pad set"><h3>Uygulama olarak yükle</h3>
       ${standalone ? '<p>Zaten uygulama olarak açıksın ✦</p>' : installEvt ? `<p class="mute">Masaüstüne / ana ekrana ekle, internet olmadan da çalışsın.</p><button class="btn primary" data-act="install">${icon('install')} Yükle</button>`
       : ios ? '<p class="mute">iPad/iPhone: Safari\'de <b>Paylaş</b> → <b>Ana Ekrana Ekle</b>.</p>' : '<p class="mute">Tarayıcının adres çubuğundaki <b>yükle</b> simgesine bas (Chrome/Edge). Android\'de menü → <b>Uygulamayı yükle</b>.</p>'}</div>`}
@@ -530,7 +577,8 @@ async function settings() {
     if (seg.dataset.pref === 'sound' && v === 'on') fx.sound('solve');
   });
   if (window.desktop) {
-    desktop.info().then(i => $('[data-ver]').textContent = `Sürüm ${i.version} · Veriler: ${i.dataDir}`);
+    desktop.info().then(i => $('[data-ver]').textContent = `Sürüm ${i.version} · Veriler: ${i.dataDir} · Güncellemeler otomatik gelir`);
+    $('[data-upcheck]').onclick = async e => { e.currentTarget.disabled = true; const v = await desktop.checkUpdate(); toast(v && v !== (await desktop.info()).version ? `${v} bulundu, arka planda iniyor` : 'MathPad güncel ✦'); e.currentTarget.disabled = false; };
     $('[data-datadir]').onclick = () => desktop.openDataDir();
     $('[data-prebackup]').onclick = () => $('[data-backup]').click();
     $('[data-uninstall]').onclick = async () => {
@@ -567,10 +615,13 @@ async function problem(id) {
     <div class="pb-main">
       <div class="board-wrap">
         <canvas class="board" aria-label="Çizim tahtası"></canvas>
+        <div class="pins" aria-label="Nova notları"></div>
         <div class="board-empty" hidden>${icon('pen')}<p>Kalemle ya da fareyle yazmaya başla</p><p class="mute small">Soru resmini <b>yapıştır (Ctrl+V)</b>, buraya <b>sürükle</b> ya da ${icon('image')} ile ekle · iki parmakla kaydır/yakınlaştır</p></div>
         <div class="toolbar" role="toolbar">
           ${tools.map(([k, ic, l]) => k === '|' ? '<span class="sep"></span>' : `<button class="tb" data-tool="${k}" title="${l}" aria-label="${l}">${icon(ic)}</button>`).join('')}
           <button class="tb" data-img title="Resim / PDF ekle" aria-label="Resim veya PDF ekle">${icon('image')}</button>
+          <button class="tb" data-symbols title="Devre sembolleri" aria-label="Devre sembolleri" aria-expanded="false">${icon('resistor')}</button>
+          <button class="tb tb-toggle ${pref('snap') === '0' ? '' : 'on-soft'}" data-snap title="Şekil düzeltme: çizgiyi bitirince kalemi bir an beklet" aria-label="Şekil düzeltme" aria-pressed="${pref('snap') !== '0'}">${icon('sparkle')}</button>
           <span class="sep"></span>
           ${COLORS.map((col, i) => `<button class="sw ${i ? '' : 'on'}" data-color="${col}" style="--c:${col}" aria-label="Renk ${i + 1}"></button>`).join('')}
           <span class="sep"></span>
@@ -579,9 +630,12 @@ async function problem(id) {
           <button class="tb" data-undo title="Geri al (Ctrl+Z)" aria-label="Geri al">${icon('undo')}</button>
           <button class="tb" data-redo title="Yinele (Ctrl+Y)" aria-label="Yinele">${icon('redo')}</button>
           <button class="tb" data-fit title="Hepsini göster" aria-label="Hepsini göster">${icon('fit')}</button>
+          <button class="tb" data-rot title="Sembolü döndür" aria-label="Seçili sembolü döndür" disabled>${icon('rotate')}</button>
           <button class="tb" data-delsel title="Seçileni sil (Del)" aria-label="Seçileni sil" disabled>${icon('trash')}</button>
         </div>
         <input type="file" accept="image/*,application/pdf" multiple hidden data-file>
+        <div class="sym-pop" hidden role="dialog" aria-label="Devre sembolleri"><p class="mute small">Dokun → tahtaya eklenir. Taşı, köşeden büyüt, ${icon('rotate')} ile döndür. Bağlantıları çizgi aracıyla çiz.</p>
+          <div class="sym-grid">${Object.entries(SYMBOLS).map(([k, v]) => `<button type="button" class="sym-btn" data-sym="${k}" title="${esc(v.label)}">${symbolSvg(k)}<span>${esc(v.label)}</span></button>`).join('')}</div></div>
       </div>
       <aside class="pb-side" ${pref('side') === '1' && matchMedia('(min-width: 1101px)').matches ? '' : 'hidden'}>
         <div class="row"><div class="seg"><button data-tab="nova">✦ Nova</button><button class="on" data-tab="calc">${icon('calc')} Hesap</button><button data-tab="fx">${icon('sigma')} Formül</button></div>
@@ -604,18 +658,50 @@ async function problem(id) {
   const board = createBoard($('canvas.board'), els, {
     onChange(list) { emptyHint.hidden = list.length > 0; clearTimeout(saveT); saveT = setTimeout(save, 800); },
     onTool: t => { $$('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); fx.slideIndicator($('.toolbar'), $(`[data-tool="${t}"]`)); },
-    onSelect: el => { $('[data-delsel]').disabled = !el; },
+    onSelect: el => { $('[data-delsel]').disabled = !el; $('[data-rot]').disabled = el?.type !== 'sym'; },
+    onSnap: type => toast(`Şekil düzeltildi: ${SHAPE_NAMES[type] || type} ✦`),
   });
   emptyHint.hidden = els.length > 0;
   board.setTool(pref('tool') || 'pen');
+  board.setSnap(pref('snap') !== '0');
+  $('.sym-pop').onclick = e => { const k = e.target.closest('[data-sym]')?.dataset.sym; if (k) { board.addSymbol(k); $('.sym-pop').hidden = true; $('[data-symbols]').setAttribute('aria-expanded', 'false'); } };
   if (els.length) requestAnimationFrame(() => board.fit());
 
   async function addFiles(files) {
     const srcs = [];
     for (const f of files) { try { srcs.push(...await fileToImages(f)); } catch (err) { toast('Eklenemedi: ' + err.message); } }
     if (srcs.length) { await board.addImages(srcs); emptyHint.hidden = true; }
+    return srcs;
   }
-  if (pendingFiles) { addFiles(pendingFiles); pendingFiles = null; }
+  if (pendingFiles) {
+    const fresh = pendingFiles; pendingFiles = null;
+    addFiles(fresh).then(srcs => autoTag(srcs[0]));
+  }
+  // Nova reads the new question photo and fills in course/topic/title (only fields still at their defaults)
+  async function autoTag(src) {
+    if (!src || !getKey() || p.topic || !/^Soru \d+$/.test(p.title)) return;
+    const r = await classify(src.split(',')[1], S.courses.map(c => c.name)); if (!r) return;
+    const before = { course: p.course, topic: p.topic, title: p.title };
+    const c = S.courses.find(x => x.name.toLocaleLowerCase('tr') === r.course.toLocaleLowerCase('tr'));
+    Object.assign(p, { course: c?.id || p.course, topic: r.topic || p.topic, title: r.title || p.title }); persist();
+    if (location.hash !== '#/p/' + p.id) return;
+    $('.title-in').value = p.title; $('[data-meta]').innerHTML = `${glyph(db.courseOf(p))}${esc(db.courseOf(p)?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}`; nav();
+    toast(`Nova etiketledi: ${db.courseOf(p)?.name} · ${p.topic}`, { label: 'Geri al', run: () => { Object.assign(p, before); persist(); route(); } });
+  }
+
+  // pinned Nova notes, shown as cards on the board
+  const pinsEl = $('.pins');
+  const renderPins = () => {
+    pinsEl.innerHTML = (p.pins || []).map((pin, i) => `<article class="pin ${pin.min ? 'min' : ''}" data-i="${i}"><header><span>📌 Nova notu</span><button class="icon-btn sm-x" data-pmin aria-label="Küçült/büyüt">${icon(pin.min ? 'plus' : 'back')}</button><button class="icon-btn sm-x" data-pdel aria-label="Notu kaldır">${icon('x')}</button></header><div class="note">${T.renderNote(pin.text)}</div></article>`).join('');
+  };
+  pinsEl.onclick = e => {
+    const i = +e.target.closest('.pin')?.dataset.i; if (Number.isNaN(i)) return;
+    if (e.target.closest('[data-pdel]')) p.pins.splice(i, 1);
+    else if (e.target.closest('[data-pmin]')) p.pins[i].min = !p.pins[i].min;
+    else return;
+    persist(); renderPins();
+  };
+  renderPins();
 
   // toolbar
   $('.toolbar').onclick = e => {
@@ -628,6 +714,9 @@ async function problem(id) {
     else if ('fit' in b.dataset) board.fit();
     else if ('delsel' in b.dataset) board.deleteSel();
     else if ('img' in b.dataset) $('[data-file]').click();
+    else if ('rot' in b.dataset) board.rotateSel();
+    else if ('symbols' in b.dataset) { const pop = $('.sym-pop'); pop.hidden = !pop.hidden; b.setAttribute('aria-expanded', !pop.hidden); }
+    else if ('snap' in b.dataset) { const on = !b.classList.contains('on-soft'); board.setSnap(on); pref('snap', on ? '1' : '0'); b.classList.toggle('on-soft', on); b.setAttribute('aria-pressed', on); toast(on ? 'Şekil düzeltme açık: çizimi bitirince kalemi bir an beklet' : 'Şekil düzeltme kapalı'); }
   };
   $('[data-file]').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
   const onPaste = e => {
@@ -703,6 +792,12 @@ async function problem(id) {
     side.querySelectorAll('[data-pane]').forEach(x => x.hidden = x.dataset.pane !== t);
     if (t === 'nova' && !stopTutor) stopTutor = mountTutor($('[data-pane=nova]'), {
       problem: p, courseName: db.courseOf(p)?.name,
+      onPin: text => { (p.pins ??= []).push({ text, at: Date.now() }); persist(); renderPins(); toast('Not tahtaya iğnelendi 📌'); },
+      onNewProblem: text => {
+        const title = text.replace(/\$[^$]*\$|[#*>`_]/g, '').trim().split('\n')[0].slice(0, 48) || 'Nova sorusu';
+        const q = createProblem(p.course, { title, topic: p.topic });
+        q.pins = [{ text, at: Date.now() }]; persist(); toast('Yeni soru oluşturuldu ✦');
+      },
       getImage: async () => (await board.export({ width: 1100 }))?.toDataURL('image/jpeg', .85) ?? null,
     });
   };
@@ -757,7 +852,7 @@ async function problem(id) {
 async function route() {
   const prev = cleanup; cleanup = null; await prev?.();
   const [a = '', b, c] = route_();
-  const fn = { '': home, c: course, courses, p: problem, review, tools, settings }[a] || notFound;
+  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, settings }[a] || notFound;
   await fx.transition(async () => {
     document.body.dataset.page = a || 'home';
     view.onclick = null;
@@ -793,6 +888,7 @@ document.addEventListener('click', e => {
   else if (a === 'add-course') addCourse();
   else if (a === 'install' && installEvt) { installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; nav(); }); }
   else if (a === 'goal') location.hash = '#/settings';
+  else if (a === 'update') desktop.installUpdate();
   else if (a === 'backup') backupNow().then(() => { toast('Yedek indirildi ✦'); route(); });
 });
 $('#pomo-pill').onclick = pomoToggle;
@@ -803,6 +899,10 @@ if (window.desktop) {
   document.body.classList.add('desktop');
   document.body.insertAdjacentHTML('afterbegin', `<div class="titlebar">${logo()}<span>MATH<b>PAD</b></span></div>`);
   desktop.onOpenFile(f => restoreBackup(f.name, f.text));
+  desktop.onUpdate(u => {
+    update = u; nav();
+    if (u.state === 'ready') toast(`MathPad ${u.version} hazır ✦`, { label: 'Yeniden başlat', run: () => desktop.installUpdate() });
+  });
 }
 
 (async () => {

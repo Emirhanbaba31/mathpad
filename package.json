@@ -1,7 +1,7 @@
 {
   "name": "mathpad",
   "productName": "MathPad",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Mühendislik öğrencileri için soru çözme defteri",
   "author": "MathPad",
   "license": "UNLICENSED",
@@ -11,7 +11,8 @@
     "vendor": "node scripts/vendor.mjs",
     "dev": "npm run vendor && electron .",
     "web": "npm run vendor && python -m http.server 5173 --bind 127.0.0.1",
-    "dist": "npm run vendor && electron-builder --win nsis"
+    "dist": "npm run vendor && electron-builder --win nsis",
+    "test": "node --test \"tests/*.test.mjs\""
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
@@ -76,6 +77,16 @@
         "name": "MathPad Yedeği",
         "description": "MathPad yedek dosyası"
       }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Emirhanbaba31",
+        "repo": "mathpad"
+      }
     ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
   }
 }

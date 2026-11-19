@@ -10,7 +10,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: t
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
-let win = null, pendingFile = null;
+let win = null, pendingFile = null, autoUpdater = null;
 const stateFile = () => path.join(app.getPath('userData'), 'window.json');
 const backupArg = argv => argv.slice(1).find(a => /\.mathpad$/i.test(a) && fs.existsSync(a));
 
@@ -92,6 +92,20 @@ app.whenReady().then(() => {
 
   createWindow();
   sendFile(backupArg(process.argv));
+
+  // Automatic updates from GitHub Releases: download quietly, ask the user to restart when ready.
+  ipcMain.handle('update-install', () => autoUpdater?.quitAndInstall(true, true));
+  ipcMain.handle('update-check', () => autoUpdater?.checkForUpdates().then(r => r?.updateInfo?.version ?? null).catch(() => null));
+  if (app.isPackaged && !process.env.MATHPAD_SELFTEST) {
+    autoUpdater = require('electron-updater').autoUpdater;
+    autoUpdater.autoDownload = true; autoUpdater.autoInstallOnAppQuit = true;
+    const tell = (state, info) => win?.webContents.send('update', { state, version: info?.version });
+    autoUpdater.on('update-available', i => tell('downloading', i));
+    autoUpdater.on('update-downloaded', i => tell('ready', i));
+    autoUpdater.on('error', () => { }); // offline or no release yet: try again later
+    const check = () => autoUpdater.checkForUpdates().catch(() => { });
+    setTimeout(check, 5000); setInterval(check, 6 * 3600e3);
+  }
 
   // Self-test for development: MATHPAD_SELFTEST=<png path> → log console errors, screenshot, quit.
   const shot = process.env.MATHPAD_SELFTEST;

@@ -1,7 +1,13 @@
 // Infinite vector whiteboard: strokes, shapes, text, images. Pan/zoom, palm rejection, undo/redo, export.
 export const COLORS = ['#f4f4f5', '#9ca3af', '#ff6b6b', '#5ab0ff', '#5be49b', '#ffd166'];
 const PRINT = { '#f4f4f5': '#111111', '#9ca3af': '#555555', '#ff6b6b': '#dc2626', '#5ab0ff': '#1d4ed8', '#5be49b': '#15803d', '#ffd166': '#b7791f' };
+import { recognize } from './shapes.js';
+import { SYMBOLS } from './symbols.js';
 const FONT = '"Space Grotesk", system-ui, sans-serif';
+const path2d = new Map(); const P2 = d => { let p = path2d.get(d); if (!p) path2d.set(d, p = new Path2D(d)); return p; };
+// symbol boxes rotate around their centre; returns the 4 corners in board space
+function symCorners(el) { const S = SYMBOLS[el.name] || SYMBOLS.node, w = S.w * el.s, h = S.h * el.s, cx = el.x + w / 2, cy = el.y + h / 2, a = (el.rot || 0) * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+  return [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].map(([x, y]) => [cx + x * c - y * sn, cy + x * sn + y * c]); }
 const paper = () => document.documentElement.dataset.theme === 'paper';
 
 const imgCache = new Map();
@@ -24,6 +30,12 @@ export function bbox(el) {
       const h = el.w; return [x0 - h, y0 - h, x1 + h, y1 + h];
     }
     case 'img': return [el.x, el.y, el.x + el.w, el.y + el.h];
+    case 'poly': {
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (let i = 0; i < el.pts.length; i += 2) { const x = el.pts[i], y = el.pts[i + 1]; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      return [x0, y0, x1, y1];
+    }
+    case 'sym': { const c = symCorners(el), xs = c.map(q => q[0]), ys = c.map(q => q[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; }
     case 'text': {
       measure.font = `${el.size}px ${FONT}`;
       const lines = el.text.split('\n');
@@ -50,6 +62,12 @@ function hit(el, x, y, r, precise) {
       return false;
     }
     case 'line': case 'arrow': return segDist(x, y, el.x1, el.y1, el.x2, el.y2) < t;
+    case 'poly': {
+      const q = el.pts, n = q.length / 2;
+      for (let i = 1; i < n + (el.closed ? 1 : 0); i++) { const a = (i - 1) % n, b = i % n; if (segDist(x, y, q[a * 2], q[a * 2 + 1], q[b * 2], q[b * 2 + 1]) < t) return true; }
+      if (!precise && el.closed) { const [a, b, c, d] = bbox(el); return x > a && x < c && y > b && y < d; }
+      return false;
+    }
     case 'rect': {
       const [a, b, c, d] = bbox(el);
       const inside = x > a - t && x < c + t && y > b - t && y < d + t;
@@ -67,6 +85,7 @@ function hit(el, x, y, r, precise) {
 function move(el, dx, dy) {
   const e = { ...el };
   if (e.type === 'stroke') e.pts = e.pts.map((v, i) => i % 3 === 0 ? v + dx : i % 3 === 1 ? v + dy : v);
+  else if (e.type === 'poly') e.pts = e.pts.map((v, i) => i % 2 ? v + dy : v + dx);
   else if ('x1' in e) { e.x1 += dx; e.x2 += dx; e.y1 += dy; e.y2 += dy; }
   else { e.x += dx; e.y += dy; }
   return e;
@@ -75,7 +94,8 @@ function scale(el, ox, oy, s) {
   const e = { ...el }, X = v => ox + (v - ox) * s, Y = v => oy + (v - oy) * s;
   if (e.type === 'stroke') { e.pts = e.pts.map((v, i) => i % 3 === 0 ? X(v) : i % 3 === 1 ? Y(v) : v); e.w = el.w * s; }
   else if ('x1' in e) { e.x1 = X(e.x1); e.x2 = X(e.x2); e.y1 = Y(e.y1); e.y2 = Y(e.y2); }
-  else { e.x = X(e.x); e.y = Y(e.y); if (e.type === 'img') { e.w *= s; e.h *= s; } else e.size *= s; }
+  else if (e.type === 'poly') { e.pts = e.pts.map((v, i) => i % 2 ? Y(v) : X(v)); e.w = el.w * s; }
+  else { e.x = X(e.x); e.y = Y(e.y); if (e.type === 'img') { e.w *= s; e.h *= s; } else if (e.type === 'sym') e.s *= s; else e.size *= s; }
   return e;
 }
 
@@ -111,6 +131,19 @@ export function drawEl(c, el, map, onload) {
       }
       return;
     case 'rect': { const [a, b, x, y] = bbox(el); c.strokeRect(a, b, x - a, y - b); return; }
+    case 'poly': {
+      const q = el.pts; c.beginPath(); c.moveTo(q[0], q[1]);
+      for (let i = 2; i < q.length; i += 2) c.lineTo(q[i], q[i + 1]);
+      if (el.closed) c.closePath(); c.stroke(); return;
+    }
+    case 'sym': {
+      const S = SYMBOLS[el.name] || SYMBOLS.node, w = S.w * el.s, h = S.h * el.s;
+      c.save(); c.translate(el.x + w / 2, el.y + h / 2); c.rotate((el.rot || 0) * Math.PI / 180); c.scale(el.s, el.s); c.translate(-S.w / 2, -S.h / 2);
+      c.lineWidth = el.w / el.s;
+      for (const d of S.stroke || []) c.stroke(P2(d));
+      for (const d of S.fill || []) c.fill(P2(d));
+      c.restore(); return;
+    }
     case 'ellipse':
       c.beginPath(); c.ellipse((el.x1 + el.x2) / 2, (el.y1 + el.y2) / 2, Math.abs(el.x2 - el.x1) / 2, Math.abs(el.y2 - el.y1) / 2, 0, 0, 7); c.stroke(); return;
     case 'text':
@@ -146,10 +179,10 @@ export async function renderTo(els, { width = 1240, box, bg = '#fff', map = PRIN
   return cv;
 }
 
-export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
+export function createBoard(cv, initial, { onChange, onTool, onSelect, onSnap }) {
   const ctx = cv.getContext('2d');
   const base = document.createElement('canvas'), bctx = base.getContext('2d');
-  const B = { els: initial, tool: 'pen', color: COLORS[0], width: 3, sel: null };
+  const B = { els: initial, tool: 'pen', color: COLORS[0], width: 3, sel: null, snap: true };
   const view = { x: 0, y: 0, z: 1 };
   let undoS = [], redoS = [], penSeen = false, draft = null, gesture = null, dirty = true, raf = 0, dpr = 1, spaceDown = false, textBox = null;
   const ptrs = new Map();
@@ -218,7 +251,7 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
 
   function down(e) {
     if (textBox) return;
-    cv.setPointerCapture(e.pointerId);
+    try { cv.setPointerCapture(e.pointerId); } catch { /* synthetic or already-released pointer */ }
     if (e.pointerType === 'pen') penSeen = true;
     ptrs.set(e.pointerId, local(e));
     if (ptrs.size === 2) {
@@ -263,7 +296,13 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     const [sx, sy] = local(e);
     if (gesture.type === 'pan') { view.x = gesture.v.x + sx - gesture.s[0]; view.y = gesture.v.y + sy - gesture.s[1]; return schedule(true); }
     if (gesture.type === 'draw' && draft) {
-      if (draft.type === 'stroke') for (const ce of e.getCoalescedEvents?.() || [e]) { const [x, y] = toWorld(ce); draft.pts.push(x, y, pressure(ce)); }
+      if (gesture.snapped) return; // already turned into a shape: wait for the pen to lift
+      if (draft.type === 'stroke') {
+        const co = e.getCoalescedEvents?.(); // may be empty (synthetic events): fall back to the event itself
+        for (const ce of co?.length ? co : [e]) { const [x, y] = toWorld(ce); draft.pts.push(x, y, pressure(ce)); }
+        const [lx, ly] = local(e);
+        if (!gesture.rest || Math.hypot(lx - gesture.rest[0], ly - gesture.rest[1]) > 4) { gesture.rest = [lx, ly]; armSnap(); }
+      }
       else {
         let [x, y] = toWorld(e);
         if (e.shiftKey && (draft.type === 'rect' || draft.type === 'ellipse')) { const s = Math.max(Math.abs(x - draft.x1), Math.abs(y - draft.y1)); x = draft.x1 + Math.sign(x - draft.x1) * s; y = draft.y1 + Math.sign(y - draft.y1) * s; }
@@ -284,12 +323,24 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     }
   }
 
+  // pen rests still for a moment while drawing → recognise the stroke and swap in a clean shape
+  let snapT = 0;
+  function armSnap() {
+    clearTimeout(snapT);
+    if (!B.snap || draft?.hl) return;
+    snapT = setTimeout(() => {
+      if (gesture?.type !== 'draw' || draft?.type !== 'stroke') return;
+      const sh = recognize(draft.pts); if (!sh) return;
+      draft = { ...sh, color: draft.color, w: draft.w }; gesture.snapped = true; schedule(); onSnap?.(sh.type);
+    }, 550);
+  }
   function up(e) {
+    clearTimeout(snapT);
     ptrs.delete(e.pointerId);
     if (gesture?.type === 'pinch') { if (!ptrs.size) gesture = null; return; }
     if (draft) {
       const d = draft; draft = null;
-      const big = d.type === 'stroke' || Math.hypot(d.x2 - d.x1, d.y2 - d.y1) > 3 / view.z;
+      const big = d.type === 'stroke' || d.type === 'poly' || Math.hypot(d.x2 - d.x1, d.y2 - d.y1) > 3 / view.z;
       if (big) { snapshot(); B.els = [...B.els, d]; changed(); } else schedule();
     }
     if (gesture?.type === 'erase' && gesture.changed) onChange(B.els);
@@ -342,6 +393,15 @@ export function createBoard(cv, initial, { onChange, onTool, onSelect }) {
     undo() { if (!undoS.length) return; redoS.push(B.els); B.els = undoS.pop(); select(null); changed(); },
     redo() { if (!redoS.length) return; undoS.push(B.els); B.els = redoS.pop(); select(null); changed(); },
     deleteSel() { if (!B.sel) return; snapshot(); B.els = B.els.filter(e => e !== B.sel); select(null); changed(); },
+    setSnap(on) { B.snap = on; },
+    rotateSel() { if (B.sel?.type !== 'sym') return; snapshot(); replaceSel({ ...B.sel, rot: ((B.sel.rot || 0) + 90) % 360 }); onChange(B.els); },
+    // circuit symbol placed in the middle of the view, selected so it can be moved/rotated right away
+    addSymbol(name) {
+      const S = SYMBOLS[name]; if (!S) return;
+      const r = cv.getBoundingClientRect(), sc = 1.6;
+      const el = { type: 'sym', name, s: sc, rot: 0, color: B.color, w: 2.2, x: (r.width / 2 - view.x) / view.z - S.w * sc / 2, y: (r.height * .4 - view.y) / view.z - S.h * sc / 2 };
+      snapshot(); B.els = [...B.els, el]; api.setTool('select'); select(el); changed();
+    },
     fit() {
       const r = cv.getBoundingClientRect();
       if (!B.els.length) { Object.assign(view, { x: 0, y: 0, z: 1 }); return schedule(true); }
