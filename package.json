@@ -1,0 +1,79 @@
+{
+  "name": "mathpad",
+  "productName": "MathPad",
+  "version": "1.2.0",
+  "description": "Mühendislik öğrencileri için soru çözme defteri",
+  "author": "MathPad",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "dev": "npm run vendor && electron .",
+    "web": "npm run vendor && python -m http.server 5173 --bind 127.0.0.1",
+    "dist": "npm run vendor && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "5.1.1",
+    "@fontsource/space-grotesk": "5.1.1",
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8",
+    "jspdf": "2.5.1",
+    "katex": "0.16.9",
+    "mathjs": "12.4.2",
+    "pdfjs-dist": "3.11.174"
+  },
+  "build": {
+    "appId": "app.mathpad.desktop",
+    "productName": "MathPad",
+    "copyright": "MathPad",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "index.html",
+      "manifest.webmanifest",
+      "sw.js",
+      "css/**",
+      "js/**",
+      "icons/**",
+      "vendor/**",
+      "electron/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MathPad",
+      "uninstallDisplayName": "MathPad",
+      "installerLanguages": [
+        "tr_TR"
+      ],
+      "language": "1055",
+      "artifactName": "MathPad-Setup-${version}.exe",
+      "include": "build/installer.nsh",
+      "deleteAppDataOnUninstall": false
+    },
+    "fileAssociations": [
+      {
+        "ext": "mathpad",
+        "name": "MathPad Yedeği",
+        "description": "MathPad yedek dosyası"
+      }
+    ]
+  }
+}
