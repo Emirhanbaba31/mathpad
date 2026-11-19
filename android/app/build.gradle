@@ -18,8 +18,20 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Upload key for Google Play: the path and password come from scripts/android-release.ps1 (never stored in the repo)
+    signingConfigs {
+        release {
+            if (System.getenv("MP_KEYSTORE")) {
+                storeFile file(System.getenv("MP_KEYSTORE"))
+                storePassword System.getenv("MP_KS_PASS")
+                keyAlias "mathpad"
+                keyPassword System.getenv("MP_KS_PASS")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (System.getenv("MP_KEYSTORE")) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
