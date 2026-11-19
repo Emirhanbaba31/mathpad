@@ -60,9 +60,13 @@ export function mountSky(cv, { courses, problems, onOpen }) {
     for (const L of labels) { const [x, y] = toScreen(L); c.fillStyle = L.color; c.fillText(L.name.toLocaleUpperCase('tr'), x, y); }
     c.globalAlpha = 1;
   }
-  function loop(t) { rot += .00004 * 16; draw(t); raf = requestAnimationFrame(loop); }
+  function loop(t) { if (document.hidden || !full()) { raf = 0; return; } rot += .00004 * 16; draw(t); raf = requestAnimationFrame(loop); }
+  const start = () => { if (!raf && full() && !document.hidden) raf = requestAnimationFrame(loop); else if (!full() || document.hidden) { cancelAnimationFrame(raf); raf = 0; } };
+  const onVis = () => start();
   layout();
-  if (full()) raf = requestAnimationFrame(loop); else draw(performance.now());
+  if (full() && !document.hidden) raf = requestAnimationFrame(loop); else draw(performance.now());
+  document.addEventListener('visibilitychange', onVis);
+  addEventListener('mp-theme', onVis);
 
   const pick = e => {
     const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
@@ -78,7 +82,7 @@ export function mountSky(cv, { courses, problems, onOpen }) {
   };
   cv.onpointerleave = () => { hover = null; tip.hidden = true; };
   cv.onclick = e => { const [s] = pick(e); if (s) onOpen(s.p.id); };
-  return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  return () => { cancelAnimationFrame(raf); ro.disconnect(); document.removeEventListener('visibilitychange', onVis); removeEventListener('mp-theme', onVis); };
 }
 
 // 53 weeks × 7 days; each day a star whose size/brightness follows solved count.

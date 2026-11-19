@@ -131,18 +131,23 @@ async function editCourse(c) {
     $('#dlg').close();
     const n = S.problems.filter(x => x.course === c.id).length;
     if (!await confirmBox('Ders silinsin mi?', `"${c.name}" ve içindeki ${n} soru çöp kutusuna taşınacak. ${db.TRASH_DAYS} gün içinde geri alabilirsin.`)) return;
+    fx.stardustBurst(view.querySelector('.page-h')?.getBoundingClientRect());
     const e = db.removeCourse(c);
     location.hash = '#/courses';
-    toast(`"${c.name}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); route(); nav(); toast('Geri alındı ✦'); } });
+    toast(`"${c.name}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); fx.markRestored(c.id); route(); nav(); toast('Geri alındı ✦'); } });
   };
   const r = await p;
   if (r?.name?.trim()) { c.name = r.name.trim(); c.icon = r.icon || c.icon; c.color = r.color || c.color; c.updated = Date.now(); persist(); route(); }
 }
 
-function celebrate() {
+function celebrate(origin) {
   const n = solvedByDay()[dayKey()] || 0, goal = S.settings.goal;
+  const r = origin?.getBoundingClientRect?.();
+  const x = r?.width ? r.left + r.width / 2 : innerWidth / 2;
+  const y = r?.height ? r.top + r.height / 2 : innerHeight / 2;
   toast(n === goal ? `Günlük hedef tamam! ${n}/${goal} ✦` : `Çözüldü ✦  Bugün ${n}/${goal}`);
-  if (n === goal) { fx.supernova(); fx.sound('goal'); } else { fx.shootingStar(); fx.sound('solve'); }
+  if (n === goal) { fx.supernova(x, y); fx.sound('goal'); }
+  else { fx.constellationBurst(x, y); fx.shootingStar(); fx.sound('solve'); }
   navigator.vibrate?.(n === goal ? [30, 60, 30] : 20);
   const byDay = solvedByDay();
   const fresh = badges.check({
@@ -189,14 +194,22 @@ function renderTrash(el) {
     : `<p class="mute">Çöp kutusu boş ✦ Sildiğin sorular ve dersler ${db.TRASH_DAYS} gün burada bekler.</p>`}`;
   el.onclick = async ev => {
     const r = ev.target.closest('[data-back-i]'), pg = ev.target.closest('[data-purge-i]');
-    if (r) { toast(db.restoreTrash(S.trash[+r.dataset.backI]) ? 'Geri alındı ✦' : 'Önce bir ders ekle'); nav(); renderTrash(el); }
+    if (r) {
+      const entry = S.trash[+r.dataset.backI], row = r.closest('.trash-row');
+      fx.stardustBurst(row?.getBoundingClientRect(), { reverse: true });
+      if (entry?.item?.id) fx.markRestored(entry.item.id);
+      toast(db.restoreTrash(entry) ? 'Geri alındı ✦' : 'Önce bir ders ekle');
+      nav(); renderTrash(el);
+    }
     if (pg) {
       const e = S.trash[+pg.dataset.purgeI];
       if (!await confirmBox('Kalıcı olarak silinsin mi?', 'Bu öğe ve çizimleri tamamen silinecek. Geri alınamaz.')) return;
+      await fx.dissolve(pg.closest('.trash-row'));
       await db.purgeTrash(x => x === e); renderTrash(el);
     }
     if (ev.target.closest('[data-empty]')) {
       if (!await confirmBox('Çöp kutusu boşaltılsın mı?', `${S.trash.length} öğe ve çizimleri kalıcı olarak silinecek. Geri alınamaz.`)) return;
+      await fx.dissolve(el.querySelector('.trash-list'));
       await db.purgeTrash(); renderTrash(el);
     }
   };
@@ -227,9 +240,10 @@ async function renderStorage(el, est, persisted) {
     renderStorage(el, est, persisted);
   };
   el.querySelector('[data-clean]')?.addEventListener('click', () => {
+    fx.stardustBurst(el.getBoundingClientRect());
     const gone = empty.map(p => db.removeProblem(p.id));
     nav(); renderStorage(el, est, persisted); renderTrash($('[data-trash]'));
-    toast(`${gone.length} boş soru çöp kutusuna taşındı`, { label: 'Geri al', run: () => { gone.forEach(db.restoreTrash); nav(); route(); } });
+    toast(`${gone.length} boş soru çöp kutusuna taşındı`, { label: 'Geri al', run: () => { gone.forEach(db.restoreTrash); fx.stardustBurst(null, { reverse: true }); nav(); route(); } });
   });
 }
 async function compressPhotos() {
@@ -274,6 +288,8 @@ function pomoToggle() {
       if (!pomo.left) {
         clearInterval(pomo.iv); pomo.iv = 0; pomo.left = pomo.total;
         const k = dayKey(); S.pomos[k] = (S.pomos[k] || 0) + 1; persist(); beep();
+        const pb = $('.pomo-body')?.getBoundingClientRect();
+        fx.supernova(pb?.width ? pb.left + pb.width / 2 : innerWidth / 2, pb?.height ? pb.top + pb.height / 2 : innerHeight / 2, { soft: true });
         toast('Süre doldu! Kısa bir mola ver ✦');
         if (window.Notification?.permission === 'granted') new Notification('MathPad', { body: 'Çalışma süresi doldu. Mola zamanı!', icon: 'icons/icon-192.png' });
       }
@@ -316,6 +332,7 @@ function nav() {
     ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
     <div class="nav-foot">${syncPill()}${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
+  fx.syncNav();
 }
 
 // ---------- Nova's weekly coaching ----------
@@ -438,7 +455,7 @@ function home() {
       <button class="btn primary" data-act="new">${icon('plus')} İlk sorunu ekle</button></div>`}
     <div class="dash">
       <div class="card pad goal">
-        <svg viewBox="0 0 120 120" class="ring"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" style="--c:${C};stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)}"/><circle cx="60" cy="60" r="52" class="ring-comet loop" pathLength="100"/></svg>
+        <svg viewBox="0 0 120 120" class="ring" data-frac="${frac}"><circle cx="60" cy="60" r="52" class="ring-bg"/><circle cx="60" cy="60" r="52" class="ring-fg" style="--c:${C};stroke-dasharray:${C};stroke-dashoffset:${C * (1 - frac)}"/><circle cx="60" cy="60" r="52" class="ring-comet loop" pathLength="100"/></svg>
         <div class="goal-txt"><b class="big mono"><span data-count="${n}">${n}</span><span>/${goal}</span></b><span class="mute">bugün çözülen</span></div>
         <div class="goal-side"><p>${n >= goal ? 'Hedef tamam. Harikasın ✦' : `Hedefe <b>${goal - n}</b> soru kaldı`}</p><button class="btn ghost small" data-act="goal">Hedefi değiştir</button></div>
       </div>
@@ -480,7 +497,7 @@ function home() {
 }
 
 function pcard(p) {
-  return `<a class="pcard" href="#/p/${p.id}"><div class="thumb"><img data-thumb="${p.id}" alt=""></div>
+  return `<a class="pcard" data-pid="${p.id}" href="#/p/${p.id}"><div class="thumb"><img data-thumb="${p.id}" alt=""></div>
     <div class="pc-body"><b>${esc(p.title)}</b><span class="mute small">${esc(p.topic || 'konu yok')} · ${hm(p.secs)}</span></div>
     <span class="badge ${p.status}">${STATUS[p.status]}</span></a>`;
 }
@@ -507,15 +524,17 @@ function course(id) {
     <div data-list></div>
     <p class="mute small drop-hint">İpucu: Soru fotoğraflarını/PDF'leri bu sayfaya sürükle, her biri yeni soru olsun.</p></div>`;
   const list = $('[data-list]');
-  function render() {
+  function render(anim = false) {
     const rows = ps.filter(p => (filter === 'all' || p.status === filter) && (!topic || p.topic === topic) && (!q || (p.title + ' ' + p.topic).toLocaleLowerCase('tr').includes(q)));
     list.className = rows.length ? 'pgrid' : '';
     list.innerHTML = rows.map(pcard).join('') || `<div class="empty card pad">${astronaut('float wave')}<p>${ps.length ? 'Bu filtrede soru yok.' : 'Bu derste henüz soru yok.'}</p>${ps.length ? '' : `<button class="btn primary" data-act="new">${icon('plus')} Soru ekle</button>`}</div>`;
     loadThumbs(list);
+    if (anim) fx.stagger(list);
+    fx.enhanceView(list);
   }
-  $('[data-f]').onclick = e => { const k = e.target.dataset.k; if (!k) return; filter = k; pref('filter', k); $$('[data-f] button').forEach(b => b.classList.toggle('on', b === e.target)); render(); };
-  $('[data-topic]')?.addEventListener('change', e => { topic = e.target.value; render(); });
-  $('[data-q]').oninput = e => { q = e.target.value.trim().toLocaleLowerCase('tr'); render(); };
+  $('[data-f]').onclick = e => { const k = e.target.dataset.k; if (!k) return; filter = k; pref('filter', k); $$('[data-f] button').forEach(b => b.classList.toggle('on', b === e.target)); render(true); };
+  $('[data-topic]')?.addEventListener('change', e => { topic = e.target.value; render(true); });
+  $('[data-q]').oninput = e => { q = e.target.value.trim().toLocaleLowerCase('tr'); render(false); };
   view.querySelector('[data-act=edit-course]').onclick = () => editCourse(c);
   render();
   // drag & drop files → one problem per file
@@ -556,7 +575,7 @@ function courses() {
     <div class="cgrid">${S.courses.map(c => {
       const ps = S.problems.filter(p => p.course === c.id), s = ps.filter(p => p.status === 'solved').length, r = ps.filter(p => p.status === 'review').length;
       const t = ps.reduce((a, p) => a + (p.secs || 0), 0);
-      return `<a class="card pad ccard" href="#/c/${c.id}" style="--cc:${c.color}">${planetSvg(c, t, ps.length)}<h3>${esc(c.name)}</h3><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div>
+      return `<a class="card pad ccard" data-cid="${c.id}" href="#/c/${c.id}" style="--cc:${c.color}">${planetSvg(c, t, ps.length)}<h3>${esc(c.name)}</h3><div class="progress"><i style="width:${ps.length ? s / ps.length * 100 : 0}%"></i></div>
         <div class="cc-stats mono small"><span>${s}/${ps.length} çözüldü</span>${r ? `<span>${r} tekrar</span>` : ''}<span>${hm(t)}</span></div></a>`;
     }).join('')}<button class="card pad ccard add" data-act="add-course">${icon('plus')}<span>Ders ekle</span><small class="mute">Her mühendislik dersi için</small></button></div></div>`;
 }
@@ -936,8 +955,8 @@ async function problem(id) {
     const s = b.dataset.s, was = p.status;
     p.status = s; p.solvedAt = s === 'solved' ? (was === 'solved' ? p.solvedAt : Date.now()) : null; p.updated = Date.now();
     persist(); $$('[data-s]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
-    if (s === 'solved' && was !== 'solved') { celebrate(); novaReact('celebrate'); }
-    if (s === 'review' && was !== 'review') { toast('Tekrar listesine eklendi'); novaReact('review'); }
+    if (s === 'solved' && was !== 'solved') { celebrate(b); novaReact('celebrate'); }
+    if (s === 'review' && was !== 'review') { fx.orbitSwirl(b); toast('Tekrar listesine eklendi'); novaReact('review'); }
     nav();
   };
   $('[data-meta]').onclick = async () => {
@@ -950,9 +969,10 @@ async function problem(id) {
   };
   $('[data-del]').onclick = async () => {
     if (saveT) await save(); // keep the latest drawing in the trash copy
+    fx.stardustBurst($('.pb-top')?.getBoundingClientRect());
     const back = p.course, e = db.removeProblem(id);
     location.hash = '#/c/' + back;
-    toast(`"${p.title}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); location.hash = '#/p/' + id; } });
+    toast(`"${p.title}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); fx.markRestored(id); fx.stardustBurst(null, { reverse: true }); location.hash = '#/p/' + id; } });
   };
   $('[data-export]').onclick = async () => {
     const r = await modal('Dışa aktar', `<label>Biçim<select class="inp" name="fmt"><option value="pdf">PDF (A4, çok sayfa)</option><option value="png">PNG resim</option></select></label>
@@ -981,12 +1001,13 @@ async function problem(id) {
   let calcMounted = false;
   const mountSide = () => { if (!calcMounted && !side.hidden) { T.mountCalc($('[data-pane=calc]')); $('[data-pane=fx]').innerHTML = T.renderNote(S.notes[p.course]); calcMounted = true; } };
   mountSide();
-  $('[data-side]').onclick = () => { side.hidden = !side.hidden; pref('side', side.hidden ? '0' : '1'); mountSide(); if (!side.hidden) { showChrome(); refreshFades(side, true); } };
+  $('[data-side]').onclick = () => { side.hidden = !side.hidden; pref('side', side.hidden ? '0' : '1'); mountSide(); if (!side.hidden) { showChrome(); refreshFades(side, true); fx.syncSegments(side, true); } };
   $('[data-close-side]').onclick = () => { side.hidden = true; pref('side', '0'); };
   let stopTutor = null;
   const tab = t => {
     side.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
     side.querySelectorAll('[data-pane]').forEach(x => x.hidden = x.dataset.pane !== t);
+    fx.syncSegments(side);
     if (t === 'nova' && !stopTutor) stopTutor = mountTutor($('[data-pane=nova]'), {
       problem: p, courseName: db.courseOf(p)?.name,
       onPin: text => { (p.pins ??= []).push({ text, at: Date.now() }); persist(); renderPins(); toast('Not tahtaya iğnelendi 📌'); },
@@ -1187,7 +1208,7 @@ async function route() {
     syncSlimBar();
     refreshFades(view, true);
     requestAnimationFrame(() => refreshFades(view, false));
-    fx.stagger(view); fx.countUp(view);
+    fx.stagger(view); fx.countUp(view); fx.enhanceView(view);
   });
 }
 // Clicked problem card's thumbnail morphs into the board (View Transitions shared element).
@@ -1235,7 +1256,7 @@ if (window.desktop) {
 (async () => {
   space();
   const t0 = Date.now();
-  document.body.insertAdjacentHTML('beforeend', `<div id="splash" aria-hidden="true">${logo('xl')}<span>MATH<b>PAD</b></span></div>`);
+  document.body.insertAdjacentHTML('beforeend', `<div id="splash" aria-hidden="true"><svg class="splash-sky" viewBox="0 0 480 300" aria-hidden="true"><path class="sp-const" d="M36 226 L92 162 L152 184 L198 122 M282 126 L332 82 L386 112 L442 64 M110 74 L164 56 L214 82" pathLength="100"/><circle class="sp-st" cx="36" cy="226" r="2" style="--d:0"/><circle class="sp-st" cx="92" cy="162" r="2.4" style="--d:1"/><circle class="sp-st" cx="152" cy="184" r="1.8" style="--d:2"/><circle class="sp-st" cx="198" cy="122" r="2.2" style="--d:3"/><circle class="sp-st" cx="282" cy="126" r="2.2" style="--d:1"/><circle class="sp-st" cx="332" cy="82" r="2.6" style="--d:2"/><circle class="sp-st" cx="386" cy="112" r="1.9" style="--d:3"/><circle class="sp-st" cx="442" cy="64" r="2.3" style="--d:4"/><circle class="sp-st" cx="110" cy="74" r="1.8" style="--d:1"/><circle class="sp-st" cx="164" cy="56" r="2.1" style="--d:2"/><circle class="sp-st" cx="214" cy="82" r="1.7" style="--d:3"/></svg>${logo('xl')}<span>MATH<b>PAD</b></span></div>`);
   const hideSplash = () => { const s = $('#splash'); if (!s) return; s.classList.add('out'); setTimeout(() => s.remove(), 600); };
   try { await db.load(); applyPrefs(); }
   catch (err) { hideSplash(); view.innerHTML = `<div class="page"><div class="card pad"><h3>Depolama açılamadı</h3><p class="mute">${esc(err.message)}. Gizli pencere kullanıyorsan normal pencerede aç.</p></div></div>`; return; }

@@ -760,3 +760,87 @@
     padding: 14px 12px;
   }
 }
+
+
+/* ---------- cohesive observatory motion for simulation controls ---------- */
+.sim-range::-webkit-slider-thumb {
+  transition: transform var(--t-med) var(--ease-spring), background var(--t-fast), box-shadow var(--t-med);
+}
+.sim-range:hover::-webkit-slider-thumb,
+.sim-range:active::-webkit-slider-thumb {
+  box-shadow: 0 0 0 1px var(--acc), 0 0 16px color-mix(in srgb, var(--acc) 60%, transparent);
+}
+.sim-range::-moz-range-thumb {
+  transition: transform var(--t-med) var(--ease-spring), background var(--t-fast), box-shadow var(--t-med);
+}
+.sim-range:hover::-moz-range-thumb,
+.sim-range:active::-moz-range-thumb {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 1px var(--acc), 0 0 16px color-mix(in srgb, var(--acc) 60%, transparent);
+}
+
+.sim-kpi, .sim-node-card {
+  transition: border-color var(--t-med) var(--ease-out), background var(--t-med) var(--ease-out), transform var(--t-med) var(--ease-out);
+}
+.sim-kpi:hover, .sim-node-card:hover {
+  border-color: color-mix(in srgb, var(--acc) 36%, var(--line-2));
+}
+
+.sim-switch {
+  transition: border-color var(--t-fast), background var(--t-med), box-shadow var(--t-med), color var(--t-fast), transform var(--t-ui) var(--ease-spring);
+}
+.sim-switch:active { transform: scale(.97); transition-duration: var(--t-xs); }
+.sim-switch-knob {
+  transition: transform 250ms var(--ease-snap), background var(--t-fast), box-shadow var(--t-med);
+}
+
+.sim-gate-wire {
+  transition: stroke var(--t-med) var(--ease-out), filter var(--t-med) var(--ease-out);
+}
+
+.sim-lamp {
+  transition: border-color var(--t-med) var(--ease-out), background var(--t-med) var(--ease-out), box-shadow var(--t-ui) var(--ease-out), color var(--t-med), transform var(--t-ui) var(--ease-spring);
+}
+.sim-lamp-on {
+  transform: scale(1.04);
+  animation: sim-lamp-pulse 2.6s ease-in-out infinite;
+}
+@keyframes sim-lamp-pulse {
+  0%, 100% {
+    box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 70%, transparent),
+                0 0 42px color-mix(in srgb, var(--acc) 26%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 28px color-mix(in srgb, var(--acc) 88%, transparent),
+                0 0 54px color-mix(in srgb, var(--acc) 40%, transparent);
+  }
+}
+
+.sim-tt-row { transition: background var(--t-fast) var(--ease-out), color var(--t-fast); }
+
+html.tab-hidden .sim-lamp-on { animation-play-state: paused !important; }
+
+html[data-motion="reduced"] .sim-lamp-on { animation: none !important; transform: none !important; }
+html[data-motion="reduced"] .sim-switch:active,
+html[data-motion="reduced"] .sim-range:hover::-webkit-slider-thumb,
+html[data-motion="reduced"] .sim-range:active::-webkit-slider-thumb,
+html[data-motion="reduced"] .sim-range:hover::-moz-range-thumb,
+html[data-motion="reduced"] .sim-range:active::-moz-range-thumb {
+  transform: none !important;
+}
+html[data-motion="reduced"] :is(.sim-switch, .sim-switch-knob, .sim-lamp, .sim-gate-wire, .sim-kpi, .sim-node-card, .sim-tt-row) {
+  transition: opacity 150ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion="off"]) .sim-lamp-on { animation: none !important; transform: none !important; }
+  html:not([data-motion="off"]) .sim-switch:active { transform: none !important; }
+  html:not([data-motion="off"]) :is(.sim-switch, .sim-switch-knob, .sim-lamp, .sim-gate-wire, .sim-kpi, .sim-node-card, .sim-tt-row) {
+    transition: opacity 150ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease !important;
+  }
+}
+
+html[data-motion="off"] :is(.sim-lamp-on, .sim-switch, .sim-switch-knob, .sim-lamp, .sim-gate-wire, .sim-kpi, .sim-node-card, .sim-tt-row) {
+  animation: none !important;
+  transition: none !important;
+}

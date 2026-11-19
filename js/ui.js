@@ -1,3 +1,5 @@
+import { full } from './fx.js';
+
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -5,15 +7,43 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;'
 // Short message at the bottom. Optional action button, e.g. { label: 'Geri al', run() {} }.
 export function toast(msg, action) {
   const t = $('#toast');
-  t.textContent = msg;
+  const dur = action ? 7000 : 2600;
+  t.style.setProperty('--toast-dur', dur + 'ms');
+  t.textContent = '';
   t.classList.toggle('has-act', !!action);
   if (action) {
+    const ring = document.createElement('span');
+    ring.className = 'toast-ring';
+    ring.setAttribute('aria-hidden', 'true');
+    ring.innerHTML = `<svg viewBox="0 0 24 24"><circle class="tr-bg" cx="12" cy="12" r="9"/><circle class="tr-fg" cx="12" cy="12" r="9" pathLength="100"/><circle class="tr-head" cx="12" cy="3" r="2.1"/></svg>`;
+    t.append(ring);
+  }
+  const txt = document.createElement('span');
+  txt.className = 'toast-msg';
+  txt.textContent = msg;
+  t.append(txt);
+  if (action) {
     const b = Object.assign(document.createElement('button'), { className: 'toast-act', textContent: action.label });
-    b.onclick = () => { t.classList.remove('show'); action.run(); };
+    b.onclick = () => { clearTimeout(t._h); t.classList.remove('show', 'comet-in'); action.run(); };
     t.append(b);
   }
+  t.classList.remove('comet-in');
+  if (full() && !document.hidden) { void t.offsetWidth; t.classList.add('comet-in'); }
   t.classList.add('show');
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), action ? 7000 : 2600);
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show', 'comet-in'), dur);
+}
+
+function implodeDialog(d) {
+  if (!full() || document.hidden || !d?.open) return;
+  const r = d.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const g = document.createElement('div');
+  g.className = 'dlg-implode';
+  g.setAttribute('aria-hidden', 'true');
+  g.style.cssText = `left:${r.left.toFixed(1)}px;top:${r.top.toFixed(1)}px;width:${r.width.toFixed(1)}px;height:${r.height.toFixed(1)}px`;
+  document.body.append(g);
+  setTimeout(() => g.remove(), 240);
 }
 
 // Form dialog. Resolves to {field: value} on OK, null on cancel.
@@ -28,15 +58,17 @@ export function modal(title, body, { ok = 'Kaydet', cancel = 'Vazgeç', danger =
   const form = d.querySelector('form');
   history.pushState({ dlg: 1 }, ''); // phone/browser back button closes the dialog instead of leaving the page
   return new Promise(res => {
-    let done = false;
+    let done = false, imploded = false;
+    const playImplode = () => { if (imploded) return; imploded = true; implodeDialog(d); };
     // drop our history entry before the caller continues, so its own navigation isn't undone by a late back()
     const unwind = () => new Promise(r => { if (!history.state?.dlg) return r(); addEventListener('popstate', () => r(), { once: true }); history.back(); });
     const finish = ok => { if (done) return; done = true; const v = ok ? Object.fromEntries(new FormData(form)) : null; unwind().then(() => res(v)); };
-    form.addEventListener('submit', e => finish(e.submitter?.value === 'ok')); // sync; 'close' can be delayed in background windows
+    form.addEventListener('submit', e => { playImplode(); finish(e.submitter?.value === 'ok'); }); // sync; 'close' can be delayed in background windows
+    d.oncancel = () => playImplode();
     d.onclose = () => finish(d.returnValue === 'ok');
   });
 }
-addEventListener('popstate', () => { const d = $('#dlg'); if (d?.open) d.close(); });
+addEventListener('popstate', () => { const d = $('#dlg'); if (d?.open) { implodeDialog(d); d.close(); } });
 export const confirmBox =(title, text, ok = 'Sil') => modal(title, `<p class="mute">${esc(text)}</p>`, { ok, danger: true }).then(Boolean);
 
 export function download(name, blobOrUrl) {
