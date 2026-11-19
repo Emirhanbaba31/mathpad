@@ -1,9 +1,9 @@
 ﻿// Offline cache for the web/PWA version (the desktop app serves files locally and does not use this).
 // Bump VERSION when app files change so installed copies update.
-const VERSION = 'mathpad-v11';
+const VERSION = 'mathpad-v13';
 const CORE = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest',
-  'js/app.js', 'js/db.js', 'js/ui.js', 'js/board.js', 'js/tools.js', 'js/fx.js', 'js/astro.js', 'js/sky.js', 'js/badges.js', 'js/shapes.js', 'js/symbols.js', 'js/sim.js', 'js/simcore.js', 'css/sim.css', 'vendor/anthropic.mjs',
+  'js/app.js', 'js/db.js', 'js/ui.js', 'js/board.js', 'js/tools.js', 'js/fx.js', 'js/astro.js', 'js/sky.js', 'js/badges.js', 'js/shapes.js', 'js/symbols.js', 'js/sync.js', 'js/merge.js', 'js/sim.js', 'js/simcore.js', 'css/sim.css', 'vendor/anthropic.mjs',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
   'vendor/math.js', 'vendor/katex/katex.min.js', 'vendor/katex/katex.min.css', 'vendor/fonts/fonts.css',
   'vendor/pdf.min.js', 'vendor/pdf.worker.min.js', 'vendor/jspdf.umd.min.js',

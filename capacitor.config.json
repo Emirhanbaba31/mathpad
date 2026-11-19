@@ -1,0 +1,7 @@
+{
+  "appId": "app.mathpad.mobile",
+  "appName": "MathPad",
+  "webDir": "www",
+  "backgroundColor": "#000000",
+  "android": { "backgroundColor": "#000000" }
+}

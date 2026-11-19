@@ -9,6 +9,7 @@ import { mountSky, galaxyCalendar, scopeChart } from './sky.js';
 import { SYMBOLS, symbolSvg } from './symbols.js';
 import { SHAPE_NAMES } from './shapes.js';
 import * as badges from './badges.js';
+import * as sync from './sync.js';
 
 const PDFJS = 'vendor/pdf.min.js', PDFJS_WORKER = 'vendor/pdf.worker.min.js', JSPDF = 'vendor/jspdf.umd.min.js';
 const view = $('#view');
@@ -131,7 +132,7 @@ async function editCourse(c) {
     toast(`"${c.name}" çöp kutusuna taşındı`, { label: 'Geri al', run: () => { db.restoreTrash(e); route(); nav(); toast('Geri alındı ✦'); } });
   };
   const r = await p;
-  if (r?.name?.trim()) { c.name = r.name.trim(); c.icon = r.icon || c.icon; c.color = r.color || c.color; persist(); route(); }
+  if (r?.name?.trim()) { c.name = r.name.trim(); c.icon = r.icon || c.icon; c.color = r.color || c.color; c.updated = Date.now(); persist(); route(); }
 }
 
 function celebrate() {
@@ -308,7 +309,7 @@ function nav() {
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
     ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
-    <div class="nav-foot">${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
+    <div class="nav-foot">${syncPill()}${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
 }
 
 // ---------- Nova's weekly coaching ----------
@@ -340,6 +341,72 @@ async function runCoach() {
     if (text) { S.coach = { at: Date.now(), text }; persist(); }
   } catch (err) { toast('Nova şu an cevap veremedi: ' + (err?.message || 'bilinmeyen hata')); }
   if ($('[data-coach]')) $('[data-coach]').innerHTML = coachHtml();
+}
+
+// ---------- Google Drive sync ----------
+const openProblemId = () => { const [a, b] = route_(); return a === 'p' ? b : null; };
+async function runSync() {
+  if (!sync.connected() || !navigator.onLine) return;
+  try {
+    const r = await sync.sync({ openProblem: openProblemId() });
+    if (r.changed) { if (openProblemId()) nav(); else route(); }
+  } catch { /* status pill shows the error */ }
+}
+function syncPill() {
+  if (!sync.connected()) return '';
+  const st = sync.status(), ago = st.at ? Math.round((Date.now() - st.at) / 60e3) : null;
+  const txt = st.state === 'busy' ? 'Eşitleniyor…' : st.state === 'error' ? 'Eşitleme hatası' : ago == null ? 'Drive bağlı' : `Eşitlendi · ${ago ? ago + ' dk önce' : 'şimdi'}`;
+  return `<a href="#/settings" class="sync-pill ${st.state || ''}" title="${esc(st.error || 'Google Drive eşitlemesi')}">${st.state === 'busy' ? '<span class="orbit-loader"></span>' : '☁'} ${txt}</a>`;
+}
+let gdAbort = null;
+function gdCard(el) {
+  const c = sync.client(), st = sync.status();
+  const head = `<h3>☁ Google Drive eşitleme</h3><p class="mute">Derslerin, soruların ve çizimlerin Google Drive'ında saklanır; telefon, tablet ve bilgisayar aynı verileri görür. Veriler Drive'ın gizli uygulama klasöründe durur, başka hiçbir dosyana erişilmez.</p>`;
+  if (!c.id) {
+    el.innerHTML = `${head}<ol class="mute small steps">
+      <li><a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">Google Cloud</a>'da bir proje aç, <b>Google Drive API</b>'yi etkinleştir.</li>
+      <li><b>OAuth izin ekranı</b>: türü <i>External</i>, kapsam olarak <code>drive.appdata</code>, test kullanıcısı olarak kendi Gmail adresin.</li>
+      <li><b>Kimlik bilgileri → OAuth istemci kimliği</b>: uygulama türü <i>TV ve sınırlı giriş cihazları</i>. Çıkan kimliği ve gizli anahtarı aşağıya yapıştır.</li></ol>
+      <form class="row wrap" data-gdform><input class="inp mono" name="id" placeholder="…apps.googleusercontent.com" autocomplete="off" style="max-width:340px" aria-label="İstemci kimliği"><input class="inp mono" name="secret" type="password" placeholder="GOCSPX-…" autocomplete="off" style="max-width:220px" aria-label="İstemci gizli anahtarı"><button class="btn primary">Kaydet</button></form>`;
+    el.querySelector('[data-gdform]').onsubmit = e => {
+      e.preventDefault(); const id = e.target.id.value.trim();
+      if (!/\.apps\.googleusercontent\.com$/.test(id)) return toast('İstemci kimliği …apps.googleusercontent.com ile bitmeli');
+      sync.setClient(id, e.target.secret.value); gdCard(el);
+    };
+    return;
+  }
+  if (!sync.connected()) {
+    el.innerHTML = `${head}<button class="btn primary" data-gdgo>Google ile bağlan</button><div data-gdcode></div>
+      <p class="mute small">${sync.BUILTIN.id ? '' : '<button type="button" class="link" data-gdreset>İstemci kimliğini değiştir</button>'}</p>`;
+    el.querySelector('[data-gdreset]')?.addEventListener('click', () => { sync.setClient(''); gdCard(el); });
+    el.querySelector('[data-gdgo]').onclick = async e => {
+      e.currentTarget.disabled = true;
+      try {
+        const dc = await sync.startSignIn();
+        el.querySelector('[data-gdcode]').innerHTML = `<div class="gd-code"><p class="mute small">1. Aşağıdaki adresi aç (başka bir cihazdan da olur)</p>
+          <a class="btn" href="${esc(dc.verification_url)}" target="_blank" rel="noopener">${esc(dc.verification_url.replace(/^https?:\/\//, ''))} ↗</a>
+          <p class="mute small">2. Bu kodu gir, Google hesabınla izin ver</p><b class="mono gd-big">${esc(dc.user_code)}</b>
+          <button type="button" class="chip" data-gdcopy>Kodu kopyala</button><p class="mute small"><span class="orbit-loader"></span> Onay bekleniyor…</p></div>`;
+        el.querySelector('[data-gdcopy]').onclick = () => { navigator.clipboard?.writeText(dc.user_code); toast('Kod kopyalandı'); };
+        gdAbort?.abort(); gdAbort = new AbortController();
+        if (await sync.finishSignIn(dc, gdAbort.signal)) { toast('Google Drive bağlandı ✦ İlk eşitleme yapılıyor…'); gdCard(el); await runSync(); gdCard(el); nav(); }
+        else { toast('Kodun süresi doldu, tekrar dene'); gdCard(el); }
+      } catch (err) { toast(err.message); gdCard(el); }
+    };
+    return;
+  }
+  el.innerHTML = `${head}<p class="mono small ${st.state === 'error' ? 'err' : ''}">${st.state === 'error' ? 'Hata: ' + esc(st.error) : st.at ? 'Son eşitleme: ' + new Date(st.at).toLocaleString('tr') : 'Henüz eşitlenmedi'}</p>
+    <div class="row wrap"><button class="btn primary" data-gdnow>☁ Şimdi eşitle</button><button class="btn ghost" data-gdoff>Bağlantıyı kes</button></div>
+    <p class="mute small">Değişiklikler birkaç saniye içinde ve uygulama her açıldığında kendiliğinden eşitlenir.</p>`;
+  el.querySelector('[data-gdnow]').onclick = async e => {
+    e.currentTarget.disabled = true; e.currentTarget.innerHTML = '<span class="orbit-loader"></span> Eşitleniyor…';
+    try { const r = await sync.sync({ openProblem: openProblemId() }); toast(`Eşitlendi ✦ ${r.boardsIn || 0} indi, ${r.boardsOut || 0} yüklendi`); } catch (err) { toast(err.message); }
+    gdCard(el); nav();
+  };
+  el.querySelector('[data-gdoff]').onclick = async () => {
+    if (!await confirmBox('Drive bağlantısı kesilsin mi?', 'Bu cihazdaki veriler kalır; Drive\'daki kopya da silinmez. Sadece eşitleme durur.', 'Bağlantıyı kes')) return;
+    await sync.disconnect(); gdCard(el); nav();
+  };
 }
 
 // ---------- views ----------
@@ -532,6 +599,7 @@ async function settings() {
       <div class="set-row"><span>Tema</span><div class="seg" data-theme-pick>${THEMES.map(([k, l]) => `<button data-v="${k}" class="${(S.settings.theme || 'space') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
       <div class="set-row"><span>Vurgu rengi <small class="mute">(halkalar, ilerleme, ışıklar)</small></span><div class="pick" data-accent>${ACCENTS.map(a => `<button class="pick-c ${(S.settings.accent || '#f4f4f5') === a ? 'on' : ''}" style="--cc:${a}" data-v="${a}" aria-label="Vurgu ${a}"><span></span></button>`).join('')}</div></div>
       <div class="set-row"><span>Efekt sesleri <small class="mute">(çözüldü, hedef)</small></span><div class="seg" data-pref="sound">${[['off', 'Kapalı'], ['on', 'Açık']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.sound || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div></div>
+    <div class="card pad set" data-gd></div>
     <div class="card pad set" data-ai></div>
     ${window.desktop ? `<div class="card pad set"><h3>Masaüstü uygulaması</h3><p class="mute" data-ver>MathPad</p>
       <div class="row wrap"><button class="btn" data-datadir>${icon('book')} Veri klasörünü aç</button><button class="btn ghost" data-upcheck>${icon('review')} Güncellemeleri denetle</button></div></div>`
@@ -558,6 +626,7 @@ async function settings() {
   $('[data-backups]')?.addEventListener('click', () => desktop.openBackups());
   renderTrash($('[data-trash]'));
   keyCard($('[data-ai]'));
+  gdCard($('[data-gd]'));
   $('[data-theme-pick]').onclick = e => {
     const v = e.target.closest('[data-v]')?.dataset.v; if (!v || v === (S.settings.theme || 'space')) return;
     $$('[data-theme-pick] button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
@@ -653,7 +722,7 @@ async function problem(id) {
     await db.set('b:' + id, board.els);
     const t = await board.thumb();
     await db.set('t:' + id, t ? t.toDataURL('image/jpeg', .7) : null);
-    p.updated = Date.now(); persist();
+    p.updated = Date.now(); persist(); sync.markDirty(id);
   }
   const board = createBoard($('canvas.board'), els, {
     onChange(list) { emptyHint.hidden = list.length > 0; clearTimeout(saveT); saveT = setTimeout(save, 800); },
@@ -731,7 +800,7 @@ async function problem(id) {
 
   // header
   const title = $('.title-in');
-  title.onchange = () => { p.title = title.value.trim() || p.title; title.value = p.title; persist(); };
+  title.onchange = () => { p.title = title.value.trim() || p.title; title.value = p.title; p.updated = Date.now(); persist(); };
   title.onkeydown = e => e.key === 'Enter' && title.blur();
   $('[data-status]').onclick = e => {
     const b = e.target.closest('[data-s]'); if (!b) return;
@@ -746,7 +815,7 @@ async function problem(id) {
     const r = await modal('Ders ve konu', `<label>Ders<select class="inp" name="course">${S.courses.map(x => `<option value="${x.id}" ${x.id === p.course ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></label>
       <label>Konu<input class="inp" name="topic" value="${esc(p.topic)}" list="dl-t2" autocomplete="off"><datalist id="dl-t2">${db.topicsOf().map(t => `<option value="${esc(t)}">`).join('')}</datalist></label>`);
     if (!r) return;
-    p.course = r.course; p.topic = r.topic.trim(); persist();
+    p.course = r.course; p.topic = r.topic.trim(); p.updated = Date.now(); persist();
     $('[data-meta]').innerHTML = `${esc(db.courseOf(p)?.name || '')}${p.topic ? ' · ' + esc(p.topic) : ''} ${icon('edit')}`;
     $('.pb-top a').href = '#/c/' + p.course; nav();
   };
@@ -775,7 +844,7 @@ async function problem(id) {
         if (i) doc.addPage();
         doc.addImage(part.toDataURL('image/jpeg', .9), 'JPEG', 0, 0, pw, part.height * pw / cv.width);
       }
-      doc.save(name + '.pdf');
+      download(name + '.pdf', doc.output('blob'));
     } catch (err) { toast('PDF oluşturulamadı: ' + err.message); }
   };
 
@@ -914,6 +983,13 @@ if (window.desktop) {
   catch (err) { hideSplash(); view.innerHTML = `<div class="page"><div class="card pad"><h3>Depolama açılamadı</h3><p class="mute">${esc(err.message)}. Gizli pencere kullanıyorsan normal pencerede aç.</p></div></div>`; return; }
   if (!fx.full()) $('#splash')?.remove();
   route(); autoBackup();
+  runSync();
+  addEventListener('mp-changed', () => sync.later());
+  addEventListener('mp-sync', () => { const f = $('.nav-foot'); if (f) nav(); });
+  addEventListener('online', () => runSync());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) runSync(); });
+  setInterval(() => runSync(), 3 * 60e3);
   setTimeout(hideSplash, Math.max(0, 1100 - (Date.now() - t0))); // let the intro play once, never longer
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => { });
+  // the Android app ships its files inside the APK, so it needs no offline cache
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.Capacitor) navigator.serviceWorker.register('sw.js').catch(() => { });
 })();

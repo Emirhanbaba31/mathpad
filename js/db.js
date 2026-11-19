@@ -46,7 +46,7 @@ function migrate() {
 }
 let timer;
 export const flush = () => { clearTimeout(timer); return set('meta', S); };
-export const persist = () => { clearTimeout(timer); timer = setTimeout(flush, 400); };
+export const persist = () => { clearTimeout(timer); timer = setTimeout(flush, 400); dispatchEvent(new Event('mp-changed')); };
 addEventListener('visibilitychange', () => document.hidden && flush());
 
 export const courseOf = p => S.courses.find(c => c.id === p.course);
@@ -71,11 +71,12 @@ export function removeCourse(c) {
 export function restoreTrash(e) {
   S.trash = S.trash.filter(x => x !== e);
   if (e.kind === 'course') {
-    S.courses.push(e.item); S.problems.unshift(...e.problems);
+    const now = Date.now(); // a restore is a newer edit than the deletion (matters for sync)
+    S.courses.push({ ...e.item, updated: now }); S.problems.unshift(...e.problems.map(p => ({ ...p, updated: now })));
     if (e.note) S.notes[e.item.id] = e.note;
   } else {
     // its course may have been deleted meanwhile → put it in the first course
-    const p = { ...e.item, course: S.courses.some(c => c.id === e.item.course) ? e.item.course : S.courses[0]?.id };
+    const p = { ...e.item, updated: Date.now(), course: S.courses.some(c => c.id === e.item.course) ? e.item.course : S.courses[0]?.id };
     if (!p.course) { S.trash.unshift(e); return null; }
     S.problems.unshift(p);
   }
@@ -85,7 +86,11 @@ export async function purgeTrash(which = () => true) {
   const gone = S.trash.filter(which);
   if (!gone.length) return 0;
   S.trash = S.trash.filter(e => !which(e));
-  for (const e of gone) for (const p of e.kind === 'course' ? e.problems : [e.item]) { await del('b:' + p.id); await del('t:' + p.id); }
+  S.gone ??= {};
+  for (const e of gone) {
+    S.gone[e.item.id] = Date.now(); // tombstone so other synced devices delete it too
+    for (const p of e.kind === 'course' ? e.problems : [e.item]) { S.gone[p.id] = Date.now(); await del('b:' + p.id); await del('t:' + p.id); }
+  }
   persist(); return gone.length;
 }
 

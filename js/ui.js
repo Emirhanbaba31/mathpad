@@ -36,10 +36,18 @@ export function modal(title, body, { ok = 'Kaydet', cancel = 'Vazgeç', danger =
 export const confirmBox = (title, text, ok = 'Sil') => modal(title, `<p class="mute">${esc(text)}</p>`, { ok, danger: true }).then(Boolean);
 
 export function download(name, blobOrUrl) {
+  // Android app: WebViews ignore <a download>, so save to the cache and open the system share sheet
+  const P = window.Capacitor?.isNativePlatform?.() && window.Capacitor.Plugins;
+  if (P?.Filesystem && P?.Share && typeof blobOrUrl !== 'string') return shareFile(P, name, blobOrUrl);
   const a = document.createElement('a');
   a.href = typeof blobOrUrl === 'string' ? blobOrUrl : URL.createObjectURL(blobOrUrl);
   a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function shareFile(P, name, blob) {
+  const data = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+  const { uri } = await P.Filesystem.writeFile({ path: name, data, directory: 'CACHE' });
+  await P.Share.share({ title: name, files: [uri] }).catch(() => { }); // user closed the sheet
 }
 
 const loaded = {};
