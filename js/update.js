@@ -1,5 +1,5 @@
 // "Check for updates" for every platform: desktop (electron-updater), Android (GitHub release APK), web (service worker).
-export const VERSION = '1.10.0'; // keep equal to package.json (tests/update.test.mjs checks)
+export const VERSION = '1.10.1'; // keep equal to package.json (tests/update.test.mjs checks)
 const REPO = 'Emirhanbaba31/mathpad';
 
 // true when version string a is newer than b ('v1.10.0' > '1.9.2')

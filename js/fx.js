@@ -89,7 +89,8 @@ document.addEventListener('click', e => {
 export function stagger(root) {
   const mode = motion();
   if (mode === 'off') return;
-  const nodes = root.querySelectorAll('.dash > *, .pgrid > *, .cgrid > *, .tabs > *, .set');
+  // tab rows stay put: re-animating them on every tab switch made the tabs slide over each other
+  const nodes = root.querySelectorAll('.dash > *, .pgrid > *, .cgrid > *, .set');
   nodes.forEach((el, i) => {
     const idx = Math.min(i, 14);
     el.style.setProperty('--i', idx);
