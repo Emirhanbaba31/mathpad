@@ -1768,3 +1768,7 @@ html[data-motion="off"] #space .pl-flare,
 html[data-motion="off"] .pl-wave {
   display: none !important;
 }
+
+/* power: background-position animations repaint every frame; stepping them (about 2 repaints/s) keeps the
+   slow planet rotation looking smooth while cutting GPU/CPU use ~30x */
+.pl-tex, .pl-clouds, .pl-night, .pl-moon-tex { animation-timing-function: steps(240) !important; }

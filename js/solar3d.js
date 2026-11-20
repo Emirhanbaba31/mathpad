@@ -6,7 +6,7 @@
 import * as THREE from '../vendor/three.mjs';
 import { SUN_DEF, PLANET_DEFS, SPEEDS, ICONS, buildCourseMap, makeRng } from './solar.js';
 import { esc } from './ui.js';
-import { motion } from './fx.js';
+import { motion, asleep } from './fx.js';
 
 const DEG = Math.PI / 180, TAU = Math.PI * 2;
 const motionMode = () => document.documentElement.dataset.motion === 'off' ? 'off' : motion();
@@ -784,9 +784,11 @@ export function mountSolar3D(container, options = {}) {
     update(dt);
     composer.render(dt);
     placeLabels();
-    if (motionMode() !== 'off' || fly || drag || cine || Math.abs(vYaw) > 1e-5) schedule();
+    // the dashboard preview is a still image until hovered: a looping WebGL card costs real GPU power
+    if (preview ? hover : (motionMode() !== 'off' || fly || drag || cine || Math.abs(vYaw) > 1e-5)) schedule();
   }
-  function schedule() { if (!raf && !dead && visible && !document.hidden) raf = requestAnimationFrame(frame); }
+  let hover = false;
+  function schedule() { if (!raf && !dead && visible && (!asleep() || cine)) raf = requestAnimationFrame(frame); }
   function kick() { last = performance.now(); schedule(); }
 
   // ---------- input ----------
@@ -860,10 +862,11 @@ export function mountSolar3D(container, options = {}) {
     else if (e.key === 'ArrowLeft' && focusIdx >= 0) flyTo((focusIdx - 1 + bodies.length) % bodies.length);
   };
   const onPreviewClick = () => { location.hash = '#/evren'; };
-  const onVis = () => { if (!document.hidden) kick(); };
+  const onVis = () => { if (!asleep()) kick(); };
   const onLost = e => { e.preventDefault(); dead = true; };
 
-  if (preview) stage.addEventListener('click', onPreviewClick);
+  const onEnter = () => { hover = true; kick(); }, onLeave = () => { hover = false; };
+  if (preview) { stage.addEventListener('click', onPreviewClick); stage.addEventListener('pointerenter', onEnter); stage.addEventListener('pointerleave', onLeave); }
   else {
     cv.addEventListener('pointerdown', onDown);
     cv.addEventListener('pointermove', onMove);
@@ -879,6 +882,7 @@ export function mountSolar3D(container, options = {}) {
   document.addEventListener('visibilitychange', onVis);
   addEventListener('mp-theme', kick);
   addEventListener('mp-planet', onPlanet);
+  addEventListener('mp-vis', onVis);
   cv.addEventListener('webglcontextlost', onLost);
   const ro = new ResizeObserver(resize); ro.observe(stage);
   const io = new IntersectionObserver(es => { visible = es[es.length - 1].isIntersecting; if (visible) kick(); });
@@ -896,6 +900,7 @@ export function mountSolar3D(container, options = {}) {
     document.removeEventListener('visibilitychange', onVis);
     removeEventListener('mp-theme', kick);
     removeEventListener('mp-planet', onPlanet);
+    removeEventListener('mp-vis', onVis);
     removeEventListener('keydown', onKey);
     cv.removeEventListener('webglcontextlost', onLost);
     disposables.forEach(d => d.dispose?.());

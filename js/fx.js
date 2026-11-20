@@ -7,10 +7,21 @@ export const full = () => motion() === 'full';
 const NS = 'http://www.w3.org/2000/svg';
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#f4f4f5';
 
-// Pause decorative CSS loops when the tab/window is hidden.
-const syncVis = () => document.documentElement.classList.toggle('tab-hidden', document.hidden);
+// Pause decorative loops when the window is hidden or not focused (saves CPU/GPU and battery).
+// Also rest after 20 s without input, except on the solar system page where people just watch.
+let idle = false, idleT = 0;
+export const asleep = () => document.hidden || !document.hasFocus() || (idle && document.body?.dataset.page !== 'evren');
+const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 20000); if (idle) { idle = false; syncVis(); } };
+for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
+addEventListener('hashchange', wake);
+const syncVis = () => {
+  const was = document.documentElement.classList.contains('tab-hidden'), now = asleep();
+  document.documentElement.classList.toggle('tab-hidden', now);
+  if (was !== now) dispatchEvent(new Event('mp-vis')); // JS animation loops listen to this
+};
 document.addEventListener('visibilitychange', syncVis);
-syncVis();
+addEventListener('blur', syncVis); addEventListener('focus', syncVis);
+syncVis(); wake();
 
 // Global particle budget across all active FX layers (smooth on mid-range Android).
 const MAX_PARTICLES = 40;

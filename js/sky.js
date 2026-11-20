@@ -1,7 +1,7 @@
 // Dashboard visuals: personal sky (canvas), yearly "galaxy" calendar and oscilloscope chart (SVG strings).
 import { esc } from './ui.js';
 import { dayKey } from './db.js';
-import { full } from './fx.js';
+import { full, asleep } from './fx.js';
 
 // deterministic pseudo-random so a star never moves between visits
 const rng = str => { let h = 2166136261; for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)) >>> 0) / 4294967296; };
@@ -60,12 +60,13 @@ export function mountSky(cv, { courses, problems, onOpen }) {
     for (const L of labels) { const [x, y] = toScreen(L); c.fillStyle = L.color; c.fillText(L.name.toLocaleUpperCase('tr'), x, y); }
     c.globalAlpha = 1;
   }
-  function loop(t) { if (document.hidden || !full()) { raf = 0; return; } rot += .00004 * 16; draw(t); raf = requestAnimationFrame(loop); }
-  const start = () => { if (!raf && full() && !document.hidden) raf = requestAnimationFrame(loop); else if (!full() || document.hidden) { cancelAnimationFrame(raf); raf = 0; } };
+  let lastT = 0;
+  function loop(t) { if (asleep() || !full()) { raf = 0; return; } if (t - lastT > 48) { rot += .00004 * (t - lastT); lastT = t; draw(t); } raf = requestAnimationFrame(loop); } // ~20 fps is plenty for a slow sky
+  const start = () => { if (!raf && full() && !asleep()) raf = requestAnimationFrame(loop); else if (!full() || asleep()) { cancelAnimationFrame(raf); raf = 0; } };
   const onVis = () => start();
   layout();
-  if (full() && !document.hidden) raf = requestAnimationFrame(loop); else draw(performance.now());
-  document.addEventListener('visibilitychange', onVis);
+  if (full() && !asleep()) raf = requestAnimationFrame(loop); else draw(performance.now());
+  document.addEventListener('visibilitychange', onVis); addEventListener('mp-vis', onVis);
   addEventListener('mp-theme', onVis);
 
   const pick = e => {

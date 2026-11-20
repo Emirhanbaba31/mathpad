@@ -3,7 +3,7 @@ import Anthropic from '../vendor/anthropic.mjs';
 import { esc, icon, toast } from './ui.js';
 import { renderNote } from './tools.js';
 import * as db from './db.js';
-import { full, motion } from './fx.js';
+import { full, motion, asleep } from './fx.js';
 
 let svgUid = 0;
 const reduceQ = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
@@ -605,7 +605,7 @@ export function mountRoamer(wrap, onOpen) {
   addEventListener('nova-react', onReactEvt);
 
   function frame(now) {
-    if (document.hidden) { raf = 0; return; }
+    if (asleep()) { raf = 0; return; } // Nova rests while the window is hidden or unfocused
     const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
     const W = layer.clientWidth, H = layer.clientHeight;
     if (!W || !H) { raf = full() ? requestAnimationFrame(frame) : 0; return; }
@@ -866,7 +866,7 @@ export function mountRoamer(wrap, onOpen) {
     if (m === 'full') {
       clearTimeout(reducedReactTimer); reducedReactTimer = 0;
       astroSvg.dataset.novaBlink = 'js';
-      if (!document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); }
+      if (!asleep()) { last = performance.now(); raf = requestAnimationFrame(frame); }
     } else {
       delete astroSvg.dataset.novaBlink;
       clearAct();
@@ -881,10 +881,10 @@ export function mountRoamer(wrap, onOpen) {
       raf = requestAnimationFrame(frame);
     }
   };
-  const onVis = () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else start(); };
+  const onVis = () => { if (asleep()) { cancelAnimationFrame(raf); raf = 0; } else start(); };
 
   start();
-  document.addEventListener('visibilitychange', onVis);
+  document.addEventListener('visibilitychange', onVis); addEventListener('mp-vis', onVis);
   addEventListener('mp-theme', start);
   addEventListener('resize', start);
   reduceQ.addEventListener?.('change', start);
@@ -903,7 +903,7 @@ export function mountRoamer(wrap, onOpen) {
     removeEventListener('wheel', onAnyActivity);
     removeEventListener('pointerdown', onAnyActivity);
     removeEventListener('nova-react', onReactEvt);
-    document.removeEventListener('visibilitychange', onVis);
+    document.removeEventListener('visibilitychange', onVis); removeEventListener('mp-vis', onVis);
     removeEventListener('mp-theme', start);
     removeEventListener('resize', start);
     reduceQ.removeEventListener?.('change', start);
