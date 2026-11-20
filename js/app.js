@@ -273,9 +273,12 @@ function hasCustomAccent(pid) {
     (S.settings.customAccentFor === undefined && S.settings.planet === undefined)
   );
 }
+let onBattery = false;
+navigator.getBattery?.().then(b => { const upd = () => { onBattery = !b.charging; applyPrefs(); }; b.addEventListener('chargingchange', upd); upd(); }).catch(() => { });
 function applyPrefs() {
   const h = document.documentElement;
-  h.dataset.motion = S.settings.motion || 'full';
+  // on battery (laptop/phone unplugged) full motion drops to reduced unless the user turned battery saving off
+  h.dataset.motion = S.settings.motion === 'full' || !S.settings.motion ? (onBattery && S.settings.ecoBattery !== 'off' ? 'reduced' : 'full') : S.settings.motion;
   h.dataset.sound = S.settings.sound || 'off';
   h.dataset.theme = S.settings.theme || 'space';
   const pid = currentPlanet();
@@ -671,6 +674,7 @@ async function settings() {
         <small class="mute pl-mode-note">Kağıt ve Gece Gözlem temalarında yalnızca vurgu rengi uygulanır.</small>
       </div>
       <div class="set-row"><span>Vurgu rengi <small class="mute">(halkalar, ilerleme, ışıklar)</small></span><div class="pick" data-accent><button type="button" class="pick-c pick-planet ${!customAcc ? 'on' : ''}" style="--cc:${pTheme.accent}" data-v="planet" title="Gezegen rengi (${esc(pTheme.name)})" aria-label="Gezegen rengi"><span></span></button>${ACCENTS.map(a => `<button type="button" class="pick-c ${customAcc && S.settings.accent === a ? 'on' : ''}" style="--cc:${a}" data-v="${a}" aria-label="Vurgu ${a}"><span></span></button>`).join('')}</div></div>
+      <div class="set-row"><span>Pilde tasarruf <small class="mute">(şarjda değilken animasyonları azaltır)</small></span><div class="seg" data-pref="ecoBattery">${[['on', 'Açık'], ['off', 'Kapalı']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.ecoBattery || 'on') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
       <div class="set-row"><span>Efekt sesleri <small class="mute">(çözüldü, hedef)</small></span><div class="seg" data-pref="sound">${[['off', 'Kapalı'], ['on', 'Açık']].map(([k, l]) => `<button data-v="${k}" class="${(S.settings.sound || 'off') === k ? 'on' : ''}">${l}</button>`).join('')}</div></div></div>
     <div class="card pad set" data-gd></div>
     <div class="card pad set" data-ai></div>

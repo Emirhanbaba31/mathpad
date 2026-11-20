@@ -8,10 +8,10 @@ const NS = 'http://www.w3.org/2000/svg';
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#f4f4f5';
 
 // Pause decorative loops when the window is hidden or not focused (saves CPU/GPU and battery).
-// Also rest after 20 s without input, except on the solar system page where people just watch.
+// Also rest after 12 s without input, except on the solar system page where people just watch.
 let idle = false, idleT = 0;
 export const asleep = () => document.hidden || !document.hasFocus() || (idle && document.body?.dataset.page !== 'evren');
-const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 20000); if (idle) { idle = false; syncVis(); } };
+const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 12000); if (idle) { idle = false; syncVis(); } };
 for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
 addEventListener('hashchange', wake);
 const syncVis = () => {

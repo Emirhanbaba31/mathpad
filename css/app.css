@@ -2917,3 +2917,10 @@ html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="
 #space { animation-timing-function: steps(260) !important; }
 /* power: while the window is hidden or unfocused every CSS animation rests (nothing waits on animationend; timers drive UI) */
 html.tab-hidden *, html.tab-hidden *::before, html.tab-hidden *::after { animation-play-state: paused !important; }
+
+/* power: a live blur behind large surfaces is re-computed every frame while anything animates underneath.
+   Big panels get a more opaque fill instead (looks the same on the dark theme); small floating bars keep their blur. */
+:root { --panel: rgba(14, 14, 17, .9); }
+.card, .pb-side, .pb-top, .pin, dialog::backdrop { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+@media (min-width: 821px) { .side { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0, 0, 0, .82); } }
+.pb-top { background: rgba(0, 0, 0, .86); }
