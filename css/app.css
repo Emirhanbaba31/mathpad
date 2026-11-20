@@ -2925,3 +2925,5 @@ html.tab-hidden *, html.tab-hidden *::before, html.tab-hidden *::after { animati
 .card, .pb-side, .pb-top, .pin, dialog::backdrop { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 @media (min-width: 821px) { .side { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0, 0, 0, .82); } }
 .pb-top { background: rgba(0, 0, 0, .86); }
+/* desktop: the tab row has no visible scrollbar and a mouse wheel only scrolls vertically, so wrap instead of scrolling */
+@media (min-width: 821px) { .tabs { flex-wrap: wrap; overflow: visible; } }
