@@ -26,11 +26,26 @@ try {
     if ($LASTEXITCODE) { throw 'Anahtar olusturulamadi' }
     Write-Host "Anahtar hazir. $keyDir klasorunu yedekle (USB, Drive...)." -ForegroundColor Green
   } else {
+    $test = { & "$env:JAVA_HOME\bin\keytool.exe" -list -keystore $env:MP_KEYSTORE -storepass:env MP_KS_PASS *> $null; -not $LASTEXITCODE }
+    # remembered password: encrypted with Windows DPAPI, only this Windows account on this PC can decrypt it
+    $saved = Join-Path $keyDir 'sifre.dpapi'
+    $ok = $false
+    if (Test-Path $saved) {
+      try { $env:MP_KS_PASS = & $plain (Get-Content $saved -Raw | ConvertTo-SecureString); $ok = & $test } catch { $ok = $false }
+      if ($ok) { Write-Host 'Kayitli sifre kullanildi.' -ForegroundColor DarkGray }
+      else { Remove-Item $saved -Force; Write-Host 'Kayitli sifre gecersiz, yeniden sorulacak.' -ForegroundColor Yellow }
+    }
     # check the password against the key before the build, so a typo costs a retry instead of a failed build
-    for ($try = 1; ; $try++) {
-      $env:MP_KS_PASS = & $plain (Read-Host 'Imza anahtari sifresi' -AsSecureString)
-      & "$env:JAVA_HOME\bin\keytool.exe" -list -keystore $env:MP_KEYSTORE -storepass:env MP_KS_PASS *> $null
-      if (-not $LASTEXITCODE) { break }
+    for ($try = 1; -not $ok; $try++) {
+      $sec = Read-Host 'Imza anahtari sifresi' -AsSecureString
+      $env:MP_KS_PASS = & $plain $sec
+      if (& $test) {
+        if ((Read-Host 'Bu bilgisayarda hatirlansin mi? Bir daha sorulmaz (E/H)') -match '^[eEyY]') {
+          $sec | ConvertFrom-SecureString | Set-Content $saved
+          Write-Host "Hatirlandi. Unutturmak icin $saved dosyasini sil." -ForegroundColor Green
+        }
+        break
+      }
       if ($try -ge 3) { throw 'Sifre 3 kez yanlis girildi' }
       Write-Host 'Sifre yanlis, tekrar dene.' -ForegroundColor Yellow
     }
