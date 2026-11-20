@@ -327,8 +327,8 @@ export function elemLatex(G, i) {
 
 export function cyclic(n) {
   n = Math.trunc(n);
-  if (!Number.isInteger(n) || n < 1 || n > 60) {
-    throw new Error('Z_n için n 1 ile 60 arasında bir tam sayı olmalı');
+  if (!Number.isInteger(n) || n < 1 || n > 200) {
+    throw new Error('Z_n için n 1 ile 200 arasında bir tam sayı olmalı');
   }
   const elements = Array.from({ length: n }, (_, i) => String(i));
   const table = new Int32Array(n * n);
@@ -357,8 +357,8 @@ export function cyclic(n) {
 
 export function dihedral(n) {
   n = Math.trunc(n);
-  if (!Number.isInteger(n) || n < 1 || n > 12) {
-    throw new Error('D_n için n 1 ile 12 arasında bir tam sayı olmalı');
+  if (!Number.isInteger(n) || n < 1 || n > 100) {
+    throw new Error('D_n için n 1 ile 100 arasında bir tam sayı olmalı');
   }
   const size = 2 * n;
   const elements = new Array(size);
@@ -808,7 +808,7 @@ export function buildGroup(spec) {
     case 'U': return unitGroup(spec.n ?? 10);
     case 'Cube': return cubeRotations();
     case 'Prod': return directProduct(buildGroup(spec.left), buildGroup(spec.right));
-    default: throw new Error(`Bilinmeyen grup türü: ${spec.kind}`);
+    default: return buildExtendedGroup(spec);
   }
 }
 
@@ -2530,4 +2530,885 @@ export function generateQuizQuestion(difficulty = 'orta', rng = Math.random, for
   }
   return pick(QUESTION_MAKERS, rng)[1](diff, rng);
 }
+
+// =====================================================================
+// EXTENDED CONSTRUCTORS (Ramond Ch. 2, 3, 9, 11.7 & Appendix 1)
+// =====================================================================
+
+function modPos(x, m) {
+  return ((x % m) + m) % m;
+}
+
+function modInv(a, p) {
+  a = modPos(a, p);
+  if (a === 0) throw new Error('Sıfırın modüler tersi yok');
+  for (let x = 1; x < p; x++) {
+    if ((a * x) % p === 1) return x;
+  }
+  throw new Error(`${a} mod ${p} tersinir değil`);
+}
+
+function isSmallPrime(p) {
+  return p === 2 || p === 3 || p === 5 || p === 7;
+}
+
+// Compute all automorphisms of a small finite group N (each returned as an array map of length |N|).
+export function automorphisms(N, { maxCount = 240 } = {}) {
+  const c = cacheOf(N);
+  if (c.automorphisms && c.automorphismsMax >= maxCount) {
+    return c.automorphisms.map(a => a.slice());
+  }
+  const n = N.size;
+  if (n === 1) return [[0]];
+  const gens = minimalGeneratingSet(N);
+  const eo = elementOrders(N);
+  const clsSize = new Int32Array(n);
+  for (const cls of conjugacyClasses(N)) for (const x of cls) clsSize[x] = cls.length;
+
+  const candLists = gens.map(g => {
+    const out = [];
+    for (let y = 0; y < n; y++) {
+      if (eo[y] === eo[g] && clsSize[y] === clsSize[g]) out.push(y);
+    }
+    return out;
+  });
+
+  const results = [];
+  const chosen = new Array(gens.length);
+  const partialMap = new Int32Array(n);
+  const used = new Uint8Array(n);
+
+  function checkPartial(depth) {
+    partialMap.fill(-1);
+    used.fill(0);
+    partialMap[N.e] = N.e;
+    used[N.e] = 1;
+    const queue = [N.e];
+    for (let k = 0; k <= depth; k++) {
+      const g = gens[k], h = chosen[k];
+      if (partialMap[g] !== -1) {
+        if (partialMap[g] !== h) return null;
+      } else {
+        if (used[h]) return null;
+        partialMap[g] = h;
+        used[h] = 1;
+        queue.push(g);
+      }
+    }
+    for (let head = 0; head < queue.length; head++) {
+      const x = queue[head];
+      const hx = partialMap[x];
+      for (let k = 0; k <= depth; k++) {
+        const y = N.mul(x, gens[k]);
+        const hy = N.mul(hx, chosen[k]);
+        if (partialMap[y] === -1) {
+          if (used[hy]) return null;
+          partialMap[y] = hy;
+          used[hy] = 1;
+          queue.push(y);
+        } else if (partialMap[y] !== hy) {
+          return null;
+        }
+      }
+    }
+    return queue.length;
+  }
+
+  function bt(depth) {
+    if (results.length >= maxCount) return;
+    const cands = candLists[depth];
+    for (let i = 0; i < cands.length; i++) {
+      if (results.length >= maxCount) return;
+      chosen[depth] = cands[i];
+      const covered = checkPartial(depth);
+      if (covered === null) continue;
+      if (depth === gens.length - 1) {
+        if (covered === n) {
+          const arr = Array.from(partialMap);
+          if (isHomomorphism(N, N, arr)) results.push(arr);
+        }
+      } else {
+        bt(depth + 1);
+      }
+    }
+  }
+
+  bt(0);
+  c.automorphisms = results;
+  c.automorphismsMax = maxCount;
+  return results.map(a => a.slice());
+}
+
+// Enumerate valid action homomorphisms H -> Aut(N) for small groups (used in Semi-Direct Product Lab).
+export function semiDirectActions(N, H, { maxActions = 48 } = {}) {
+  const auts = automorphisms(N, { maxCount: 240 });
+  const m = auts.length;
+  const keyOf = a => a.join(',');
+  const idxMap = new Map(auts.map((a, i) => [keyOf(a), i]));
+  const autTable = new Int32Array(m * m);
+  for (let i = 0; i < m; i++) {
+    for (let j = 0; j < m; j++) {
+      const comp = new Array(N.size);
+      for (let x = 0; x < N.size; x++) comp[x] = auts[i][auts[j][x]];
+      autTable[i * m + j] = idxMap.get(keyOf(comp));
+    }
+  }
+  const idIdx = idxMap.get(Array.from({ length: N.size }, (_, i) => i).join(','));
+  const AutN = createGroup({
+    name: `Aut(${N.name})`,
+    latex: `\\operatorname{Aut}(${N.latex})`,
+    elements: auts.map((_, i) => `φ_${i}`),
+    table: autTable,
+    e: idIdx,
+  });
+
+  const hGens = minimalGeneratingSet(H);
+  const eoH = elementOrders(H);
+  const eoA = elementOrders(AutN);
+  const candLists = hGens.map(g => {
+    const o = eoH[g];
+    const out = [];
+    for (let a = 0; a < AutN.size; a++) {
+      if (o % eoA[a] === 0) out.push(a);
+    }
+    return out;
+  });
+
+  const actions = [];
+  const chosen = new Array(hGens.length);
+
+  function bt(depth) {
+    if (actions.length >= maxActions) return;
+    const cands = candLists[depth];
+    for (let i = 0; i < cands.length; i++) {
+      if (actions.length >= maxActions) return;
+      chosen[depth] = cands[i];
+      if (depth === hGens.length - 1) {
+        const ext = extendHomomorphism(H, AutN, hGens.map((g, k) => [g, chosen[k]]));
+        if (ext.ok) {
+          const table = ext.map.map(ai => auts[ai]);
+          const isTrivial = ext.map.every(ai => ai === idIdx);
+          actions.push({
+            autMap: ext.map,
+            table,
+            isTrivial,
+            imageSize: ext.image.length,
+          });
+        }
+      } else {
+        bt(depth + 1);
+      }
+    }
+  }
+  bt(0);
+  return { AutN, auts, actions };
+}
+
+// Generic semi-direct product N ⋊_φ H with a given action homomorphism φ: H -> Aut(N).
+// action can be a function (hIdx, nIdx) => nIdx' or a 2D array action[hIdx][nIdx].
+export function semiDirect(N, H, action, opts = {}) {
+  const n1 = N.size, n2 = H.size;
+  const size = n1 * n2;
+  if (size > 240) {
+    throw new Error(`Yarı-direkt çarpım mertebesi çok büyük (${size} > 240)`);
+  }
+  const actionTable = new Array(n2);
+  for (let h = 0; h < n2; h++) {
+    const row = new Int32Array(n1);
+    const seen = new Uint8Array(n1);
+    for (let x = 0; x < n1; x++) {
+      const y = typeof action === 'function' ? action(h, x) : action[h][x];
+      if (!Number.isInteger(y) || y < 0 || y >= n1 || seen[y]) {
+        throw new Error(`Geçersiz otomorfizma eylemi: φ(${H.elements[h]}) bijektif değil`);
+      }
+      seen[y] = 1;
+      row[x] = y;
+    }
+    actionTable[h] = row;
+  }
+  // Verify homomorphism property for each φ_h ∈ Aut(N) and φ_{h1 h2} = φ_{h1} ∘ φ_{h2}
+  for (let h = 0; h < n2; h++) {
+    const phi = actionTable[h];
+    for (let x = 0; x < n1; x++) {
+      for (let y = 0; y < n1; y++) {
+        if (phi[N.mul(x, y)] !== N.mul(phi[x], phi[y])) {
+          throw new Error(`φ(${H.elements[h]}) bir ${N.name} otomorfizması değil`);
+        }
+      }
+    }
+  }
+  for (let h1 = 0; h1 < n2; h1++) {
+    for (let h2 = 0; h2 < n2; h2++) {
+      const h12 = H.mul(h1, h2);
+      for (let x = 0; x < n1; x++) {
+        if (actionTable[h12][x] !== actionTable[h1][actionTable[h2][x]]) {
+          throw new Error(`Eylem homomorfizma koşulunu sağlamıyor: φ(${H.elements[h1]}·${H.elements[h2]}) ≠ φ(${H.elements[h1]})∘φ(${H.elements[h2]})`);
+        }
+      }
+    }
+  }
+
+  const elements = new Array(size);
+  const latexElements = new Array(size);
+  for (let i = 0; i < n1; i++) {
+    for (let j = 0; j < n2; j++) {
+      const idx = i * n2 + j;
+      elements[idx] = `(${N.elements[i]},${H.elements[j]})`;
+      latexElements[idx] = `(${elemLatex(N, i)},\\,${elemLatex(H, j)})`;
+    }
+  }
+  const table = new Int32Array(size * size);
+  for (let i1 = 0; i1 < n1; i1++) {
+    for (let j1 = 0; j1 < n2; j1++) {
+      const a = i1 * n2 + j1;
+      const phi = actionTable[j1];
+      for (let i2 = 0; i2 < n1; i2++) {
+        const ni = N.mul(i1, phi[i2]) * n2;
+        for (let j2 = 0; j2 < n2; j2++) {
+          table[a * size + (i2 * n2 + j2)] = ni + H.mul(j1, j2);
+        }
+      }
+    }
+  }
+  const e = N.e * n2 + H.e;
+  const name = opts.name || `${N.name} ⋊ ${H.name}`;
+  const latex = opts.latex || `${N.latex} \\rtimes ${H.latex}`;
+  return createGroup({
+    name,
+    latex,
+    elements,
+    table,
+    e,
+    meta: {
+      kind: opts.kind || 'SemiDirect',
+      spec: opts.spec || null,
+      turkishName: opts.turkishName || `Yarı-Direkt Çarpım ${name}`,
+      latexElements,
+      normalFactor: N,
+      actingFactor: H,
+      actionTable: actionTable.map(r => Array.from(r)),
+      actionDesc: opts.actionDesc || '',
+      ...(opts.extraMeta || {}),
+    },
+  });
+}
+
+// Dicyclic / Binary Dihedral group Q_{2n} of order 4n.
+// Ramond's convention (Section 3.9): Q_{2n} has order 4n (so n=2 gives Q_4 ≅ Q_8, the quaternion group of order 8).
+// Presentation: <a, b | a^{2n} = 1, b^2 = a^n, b a b^{-1} = a^{-1}>.
+export function dicyclic(n) {
+  n = Math.trunc(n);
+  if (!Number.isInteger(n) || n < 2 || n > 50) {
+    throw new Error('Q_{2n} için n 2 ile 50 arasında bir tam sayı olmalı (mertebe 4n ≤ 200)');
+  }
+  const m = 2 * n;
+  const size = 4 * n;
+  const elements = new Array(size);
+  const latexElements = new Array(size);
+  for (let k = 0; k < m; k++) {
+    elements[k] = k === 0 ? '1' : k === n ? '-1' : (k === 1 ? 'a' : `a${toSup(k)}`);
+    latexElements[k] = k === 0 ? '1' : k === n ? '-1' : (k === 1 ? 'a' : `a^{${k}}`);
+    elements[m + k] = k === 0 ? 'b' : (k === 1 ? 'ab' : `a${toSup(k)}b`);
+    latexElements[m + k] = k === 0 ? 'b' : (k === 1 ? 'ab' : `a^{${k}}b`);
+  }
+  const table = new Int32Array(size * size);
+  for (let i = 0; i < size; i++) {
+    const bi = i >= m ? 1 : 0;
+    const j = bi ? i - m : i;
+    for (let u = 0; u < size; u++) {
+      const bu = u >= m ? 1 : 0;
+      const k = bu ? u - m : u;
+      let res;
+      if (bi === 0 && bu === 0) res = (j + k) % m;
+      else if (bi === 0 && bu === 1) res = m + ((j + k) % m);
+      else if (bi === 1 && bu === 0) res = m + modPos(j - k, m);
+      else res = modPos(j - k + n, m);
+      table[i * size + u] = res;
+    }
+  }
+  const sub = 2 * n;
+  return createGroup({
+    name: `Q_${sub}`,
+    latex: `Q_{${sub}}`,
+    elements,
+    table,
+    e: 0,
+    meta: {
+      kind: 'Q2n',
+      n,
+      spec: { kind: 'Q2n', n },
+      turkishName: `İkili Dihedral (Disiklik) Grup Q_${sub} (|G| = ${size}${n === 2 ? ', Q_4 ≅ Q_8' : ''})`,
+      ramondConvention: `Ramond notasyonu: Q_{2n} mertebesi 4n olan ikili dihedral gruptur (n=2 için Q_4 ≅ Q_8).`,
+      latexElements,
+      centerNegOne: n,
+      doubleCoverOf: `D_${n}`,
+      defaultGenerators: [1, m],
+    },
+  });
+}
+export const binaryDihedral = dicyclic;
+
+// Exact quaternion helper for binary polyhedral groups 2T (24), 2O (48), 2I (120).
+function fmtQuatLabel(coords, mode) {
+  const basis = ['', 'i', 'j', 'k'];
+  if (mode === '2T') {
+    const [a, b, c, d] = coords;
+    const nz = coords.filter(v => v !== 0).length;
+    if (nz === 1) {
+      const idx = coords.findIndex(v => v !== 0);
+      const s = coords[idx] > 0 ? '' : '-';
+      return { text: idx === 0 ? (coords[0] > 0 ? '1' : '-1') : `${s}${basis[idx]}`, latex: idx === 0 ? (coords[0] > 0 ? '1' : '-1') : `${s}${basis[idx]}` };
+    }
+    const terms = coords.map((v, idx) => {
+      const sign = v > 0 ? (idx === 0 ? '' : '+') : '-';
+      return `${sign}${idx === 0 ? '1' : basis[idx]}`;
+    }).join('');
+    return { text: `(${terms})/2`, latex: `\\tfrac{1}{2}(${terms})` };
+  }
+  if (mode === '2O') {
+    const isSqrt2 = coords.some(([, v]) => v !== 0);
+    if (!isSqrt2) return fmtQuatLabel(coords.map(([u]) => u), '2T');
+    const parts = [];
+    for (let idx = 0; idx < 4; idx++) {
+      const v = coords[idx][1];
+      if (!v) continue;
+      const sign = v > 0 ? (parts.length ? '+' : '') : '-';
+      parts.push(`${sign}${idx === 0 ? '1' : basis[idx]}`);
+    }
+    return { text: `(${parts.join('')})/√2`, latex: `\\tfrac{1}{\\sqrt{2}}(${parts.join('')})` };
+  }
+  // 2I: coords are [u, v] representing (u + v φ)/2
+  const hasPhi = coords.some(([, v]) => v !== 0);
+  if (!hasPhi) return fmtQuatLabel(coords.map(([u]) => u), '2T');
+  const partsT = [], partsL = [];
+  for (let idx = 0; idx < 4; idx++) {
+    const [u, v] = coords[idx];
+    if (u === 0 && v === 0) continue;
+    let coeffT, coeffL, neg = false;
+    if (v === 0) {
+      neg = u < 0; coeffT = Math.abs(u) === 1 ? '' : String(Math.abs(u)); coeffL = coeffT;
+    } else if (u === 0) {
+      neg = v < 0; coeffT = 'φ'; coeffL = '\\phi';
+    } else if (u === -v) {
+      // (-1 + φ) = φ^{-1}
+      neg = v < 0; coeffT = 'φ⁻¹'; coeffL = '\\phi^{-1}';
+    } else {
+      coeffT = `(${u}+${v}φ)`; coeffL = `(${u}+${v}\\phi)`;
+    }
+    const s = neg ? '-' : (partsT.length ? '+' : '');
+    const b = idx === 0 ? (coeffT === '' ? '1' : '') : basis[idx];
+    partsT.push(`${s}${coeffT}${b}`);
+    partsL.push(`${s}${coeffL}${b}`);
+  }
+  return { text: `(${partsT.join('')})/2`, latex: `\\tfrac{1}{2}(${partsL.join('')})` };
+}
+
+// Binary Tetrahedral group 2T ≅ SL(2,3) of order 24 (exact Hurwitz unit quaternions).
+export function binaryTetrahedral() {
+  const elems = [
+    [2, 0, 0, 0], [-2, 0, 0, 0],
+    [0, 2, 0, 0], [0, -2, 0, 0],
+    [0, 0, 2, 0], [0, 0, -2, 0],
+    [0, 0, 0, 2], [0, 0, 0, -2],
+  ];
+  for (const a of [1, -1]) for (const b of [1, -1]) for (const c of [1, -1]) for (const d of [1, -1]) {
+    elems.push([a, b, c, d]);
+  }
+  const keyOf = q => q.join(',');
+  const idxMap = new Map(elems.map((q, i) => [keyOf(q), i]));
+  const mulQ = (p, q) => [
+    (p[0] * q[0] - p[1] * q[1] - p[2] * q[2] - p[3] * q[3]) / 2,
+    (p[0] * q[1] + p[1] * q[0] + p[2] * q[3] - p[3] * q[2]) / 2,
+    (p[0] * q[2] - p[1] * q[3] + p[2] * q[0] + p[3] * q[1]) / 2,
+    (p[0] * q[3] + p[1] * q[2] - p[2] * q[1] + p[3] * q[0]) / 2,
+  ];
+  const n = elems.length;
+  const table = new Int32Array(n * n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      table[i * n + j] = idxMap.get(keyOf(mulQ(elems[i], elems[j])));
+    }
+  }
+  const labels = elems.map(q => fmtQuatLabel(q, '2T'));
+  return createGroup({
+    name: '2T',
+    latex: '2T \\cong \\mathrm{SL}(2,3)',
+    elements: labels.map(l => l.text),
+    table,
+    e: 0,
+    meta: {
+      kind: '2T',
+      spec: { kind: '2T' },
+      turkishName: 'İkili Dörtyüzlü Grup 2T ≅ SL(2,3) (|G| = 24)',
+      latexElements: labels.map(l => l.latex),
+      quaternions: elems.map(q => q.map(v => v / 2)),
+      centerNegOne: 1,
+      doubleCoverOf: 'A_4',
+      defaultGenerators: [2, 8], // i and (1+i+j+k)/2
+    },
+  });
+}
+
+// Binary Octahedral group 2O of order 48 (exact unit quaternions over Z[√2]/2).
+export function binaryOctahedral() {
+  const elems = [
+    [[2, 0], [0, 0], [0, 0], [0, 0]],
+    [[-2, 0], [0, 0], [0, 0], [0, 0]],
+    [[0, 0], [2, 0], [0, 0], [0, 0]],
+    [[0, 0], [-2, 0], [0, 0], [0, 0]],
+    [[0, 0], [0, 0], [2, 0], [0, 0]],
+    [[0, 0], [0, 0], [-2, 0], [0, 0]],
+    [[0, 0], [0, 0], [0, 0], [2, 0]],
+    [[0, 0], [0, 0], [0, 0], [-2, 0]],
+  ];
+  for (const a of [1, -1]) for (const b of [1, -1]) for (const c of [1, -1]) for (const d of [1, -1]) {
+    elems.push([[a, 0], [b, 0], [c, 0], [d, 0]]);
+  }
+  for (let p = 0; p < 4; p++) {
+    for (let q = p + 1; q < 4; q++) {
+      for (const s1 of [1, -1]) {
+        for (const s2 of [1, -1]) {
+          const v = [[0, 0], [0, 0], [0, 0], [0, 0]];
+          v[p] = [0, s1];
+          v[q] = [0, s2];
+          elems.push(v);
+        }
+      }
+    }
+  }
+  const mulS = (a, b) => [a[0] * b[0] + 2 * a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+  const lin4 = (p, q, signs, idxs) => {
+    let u = 0, v = 0;
+    for (let k = 0; k < 4; k++) {
+      const pr = mulS(p[idxs[k][0]], q[idxs[k][1]]);
+      u += signs[k] * pr[0];
+      v += signs[k] * pr[1];
+    }
+    return [u / 2, v / 2];
+  };
+  const mulQ = (p, q) => [
+    lin4(p, q, [1, -1, -1, -1], [[0, 0], [1, 1], [2, 2], [3, 3]]),
+    lin4(p, q, [1, 1, 1, -1], [[0, 1], [1, 0], [2, 3], [3, 2]]),
+    lin4(p, q, [1, -1, 1, 1], [[0, 2], [1, 3], [2, 0], [3, 1]]),
+    lin4(p, q, [1, 1, -1, 1], [[0, 3], [1, 2], [2, 1], [3, 0]]),
+  ];
+  const keyOf = q => q.map(c => `${c[0]}:${c[1]}`).join(',');
+  const idxMap = new Map(elems.map((q, i) => [keyOf(q), i]));
+  const n = elems.length;
+  const table = new Int32Array(n * n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      table[i * n + j] = idxMap.get(keyOf(mulQ(elems[i], elems[j])));
+    }
+  }
+  const labels = elems.map(q => fmtQuatLabel(q, '2O'));
+  const SQ2 = Math.SQRT2;
+  return createGroup({
+    name: '2O',
+    latex: '2O',
+    elements: labels.map(l => l.text),
+    table,
+    e: 0,
+    meta: {
+      kind: '2O',
+      spec: { kind: '2O' },
+      turkishName: 'İkili Sekizyüzlü Grup 2O (|G| = 48)',
+      latexElements: labels.map(l => l.latex),
+      quaternions: elems.map(q => q.map(([u, v]) => (u + v * SQ2) / 2)),
+      centerNegOne: 1,
+      doubleCoverOf: 'S_4',
+      defaultGenerators: [8, 24], // (1+i+j+k)/2 and (1+i)/√2
+    },
+  });
+}
+
+// Binary Icosahedral group 2I ≅ SL(2,5) of order 120 (exact icosians over Z[φ]/2).
+export function binaryIcosahedral() {
+  const mulP = (a, b) => [a[0] * b[0] + a[1] * b[1], a[0] * b[1] + a[1] * b[0] + a[1] * b[1]];
+  const lin4 = (p, q, signs, idxs) => {
+    let u = 0, v = 0;
+    for (let k = 0; k < 4; k++) {
+      const pr = mulP(p[idxs[k][0]], q[idxs[k][1]]);
+      u += signs[k] * pr[0];
+      v += signs[k] * pr[1];
+    }
+    return [u / 2, v / 2];
+  };
+  const mulQ = (p, q) => [
+    lin4(p, q, [1, -1, -1, -1], [[0, 0], [1, 1], [2, 2], [3, 3]]),
+    lin4(p, q, [1, 1, 1, -1], [[0, 1], [1, 0], [2, 3], [3, 2]]),
+    lin4(p, q, [1, -1, 1, 1], [[0, 2], [1, 3], [2, 0], [3, 1]]),
+    lin4(p, q, [1, 1, -1, 1], [[0, 3], [1, 2], [2, 1], [3, 0]]),
+  ];
+  const keyOf = q => q.map(c => `${c[0]}:${c[1]}`).join(',');
+  const id = [[2, 0], [0, 0], [0, 0], [0, 0]];
+  const negId = [[-2, 0], [0, 0], [0, 0], [0, 0]];
+  // Generators: g1 = (1+i+j+k)/2 (order 6), g2 = (φ + i + φ⁻¹ j)/2 (order 10); g1*g2 has order 4
+  const g1 = [[1, 0], [1, 0], [1, 0], [1, 0]];
+  const g2 = [[0, 1], [1, 0], [-1, 1], [0, 0]];
+  const elems = [id, negId];
+  const idxMap = new Map([[keyOf(id), 0], [keyOf(negId), 1]]);
+  const gens = [g1, g2];
+  for (const g of gens) {
+    const k = keyOf(g);
+    if (!idxMap.has(k)) { idxMap.set(k, elems.length); elems.push(g); }
+  }
+  for (let head = 0; head < elems.length; head++) {
+    const cur = elems[head];
+    for (const g of gens) {
+      const prod = mulQ(cur, g);
+      const k = keyOf(prod);
+      if (!idxMap.has(k)) {
+        idxMap.set(k, elems.length);
+        elems.push(prod);
+      }
+    }
+  }
+  const n = elems.length;
+  const table = new Int32Array(n * n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      table[i * n + j] = idxMap.get(keyOf(mulQ(elems[i], elems[j])));
+    }
+  }
+  const labels = elems.map(q => fmtQuatLabel(q, '2I'));
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  return createGroup({
+    name: '2I',
+    latex: '2I \\cong \\mathrm{SL}(2,5)',
+    elements: labels.map(l => l.text),
+    table,
+    e: 0,
+    meta: {
+      kind: '2I',
+      spec: { kind: '2I' },
+      turkishName: 'İkili Yirmiyüzlü Grup 2I ≅ SL(2,5) (|G| = 120)',
+      latexElements: labels.map(l => l.latex),
+      quaternions: elems.map(q => q.map(([u, v]) => (u + v * PHI) / 2)),
+      centerNegOne: 1,
+      doubleCoverOf: 'A_5',
+      defaultGenerators: [2, 3],
+    },
+  });
+}
+
+// Frobenius group T_7 = Z_7 ⋊ Z_3 of order 21 (Ramond Section 2.4.4 & 3.10).
+export function frobeniusT7() {
+  const Z7 = cyclic(7);
+  const Z3 = cyclic(3);
+  const mults = [1, 2, 4]; // 2^0, 2^1, 2^2 mod 7
+  return semiDirect(Z7, Z3, (h, n) => (n * mults[h]) % 7, {
+    name: 'T_7',
+    latex: 'T_7 = \\mathbb{Z}_7 \\rtimes \\mathbb{Z}_3',
+    kind: 'T7',
+    spec: { kind: 'T7' },
+    turkishName: 'Frobenius Grubu T_7 = Z_7 ⋊ Z_3 (|G| = 21)',
+    actionDesc: 'φ(h)(n) = 2^h · n (mod 7)',
+    extraMeta: { defaultGenerators: [3, 1] }, // (1,0) order 7 and (0,1) order 3
+  });
+}
+
+// ---------- Matrix groups over small Galois fields F_p (p prime <= 7) ----------
+
+function mulMatMod(A, B, dim, p) {
+  const C = new Array(dim * dim);
+  for (let i = 0; i < dim; i++) {
+    for (let j = 0; j < dim; j++) {
+      let s = 0;
+      for (let k = 0; k < dim; k++) s += A[i * dim + k] * B[k * dim + j];
+      C[i * dim + j] = modPos(s, p);
+    }
+  }
+  return C;
+}
+
+function detMatMod(M, dim, p) {
+  if (dim === 2) return modPos(M[0] * M[3] - M[1] * M[2], p);
+  const [a, b, c, d, e, f, g, h, i] = M;
+  return modPos(a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g), p);
+}
+
+function canonPsl2(M, p) {
+  if (p === 2) return M;
+  const half = (p - 1) >> 1;
+  for (let i = 0; i < 4; i++) {
+    if (M[i] !== 0) {
+      if (M[i] <= half) return M;
+      return M.map(v => modPos(-v, p));
+    }
+  }
+  return M;
+}
+
+function fmtMatLabel(M, dim, projective = false) {
+  if (dim === 2) {
+    const t = `[${M[0]} ${M[1]}; ${M[2]} ${M[3]}]`;
+    const lx = `\\begin{pmatrix}${M[0]}&${M[1]}\\\\${M[2]}&${M[3]}\\end{pmatrix}`;
+    return { text: projective ? `±${t}` : t, latex: projective ? `\\pm${lx}` : lx };
+  }
+  const t = `[${M[0]}${M[1]}${M[2]};${M[3]}${M[4]}${M[5]};${M[6]}${M[7]}${M[8]}]`;
+  const lx = `\\begin{pmatrix}${M[0]}&${M[1]}&${M[2]}\\\\${M[3]}&${M[4]}&${M[5]}\\\\${M[6]}&${M[7]}&${M[8]}\\end{pmatrix}`;
+  return { text: t, latex: lx };
+}
+
+function buildMatrixGroup({ name, latex, turkishName, dim, p, mats, projective = false, kind, spec }) {
+  const idMat = new Array(dim * dim).fill(0);
+  for (let i = 0; i < dim; i++) idMat[i * dim + i] = 1;
+  const keyOf = M => M.join(',');
+  const idKey = keyOf(idMat);
+  // Ensure identity is at index 0
+  const idPos = mats.findIndex(m => keyOf(m) === idKey);
+  if (idPos > 0) {
+    const tmp = mats[0]; mats[0] = mats[idPos]; mats[idPos] = tmp;
+  }
+  const n = mats.length;
+  const idxMap = new Map(mats.map((m, i) => [keyOf(m), i]));
+  const table = new Int32Array(n * n);
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      let prod = mulMatMod(mats[i], mats[j], dim, p);
+      if (projective) prod = canonPsl2(prod, p);
+      table[i * n + j] = idxMap.get(keyOf(prod));
+    }
+  }
+  const labels = mats.map((m, i) => i === 0 ? { text: 'I', latex: 'I' } : fmtMatLabel(m, dim, projective));
+  return createGroup({
+    name,
+    latex,
+    elements: labels.map(l => l.text),
+    table,
+    e: 0,
+    meta: {
+      kind,
+      spec,
+      turkishName,
+      latexElements: labels.map(l => l.latex),
+      matrices: mats,
+      dim,
+      prime: p,
+      isProjective: projective,
+    },
+  });
+}
+
+// General Linear Group GL(dim, F_p) for orders <= 240: GL(2,2) (6), GL(2,3) (48), GL(3,2) (168).
+export function gl(dim, p) {
+  dim = Math.trunc(dim);
+  p = Math.trunc(p);
+  if (!isSmallPrime(p)) throw new Error('Galois cismi için p ∈ {2, 3, 5, 7} asal olmalı');
+  if (dim === 2 && p <= 3) {
+    const mats = [];
+    for (let a = 0; a < p; a++) for (let b = 0; b < p; b++)
+      for (let c = 0; c < p; c++) for (let d = 0; d < p; d++) {
+        const M = [a, b, c, d];
+        if (detMatMod(M, 2, p) !== 0) mats.push(M);
+      }
+    return buildMatrixGroup({
+      name: `GL(2,${p})`,
+      latex: `\\mathrm{GL}(2,\\mathbb{F}_{${p}})`,
+      turkishName: `Genel Lineer Grup GL(2, F_${p}) (|G| = ${mats.length})`,
+      dim: 2, p, mats, kind: 'GL', spec: { kind: 'GL', dim: 2, p },
+    });
+  }
+  if (dim === 3 && p === 2) {
+    const mats = [];
+    for (let mask = 0; mask < 512; mask++) {
+      const M = new Array(9);
+      for (let k = 0; k < 9; k++) M[k] = (mask >> k) & 1;
+      if (detMatMod(M, 3, 2) === 1) mats.push(M);
+    }
+    return buildMatrixGroup({
+      name: 'GL(3,2)',
+      latex: '\\mathrm{GL}(3,\\mathbb{F}_2)',
+      turkishName: 'Fano Düzlemi Otomorfizma Grubu GL(3,2) (|G| = 168)',
+      dim: 3, p: 2, mats, kind: 'GL32', spec: { kind: 'GL32' },
+    });
+  }
+  throw new Error(`GL(${dim}, F_${p}) mertebesi 240 sınırını aşıyor`);
+}
+
+// Special Linear Group SL(dim, F_p) for orders <= 240: SL(2,2) (6), SL(2,3) (24), SL(2,5) (120), SL(3,2) (168).
+export function sl(dim, p) {
+  dim = Math.trunc(dim);
+  p = Math.trunc(p);
+  if (!isSmallPrime(p)) throw new Error('Galois cismi için p ∈ {2, 3, 5, 7} asal olmalı');
+  if (dim === 3 && p === 2) return gl(3, 2);
+  if (dim === 2 && p <= 5) {
+    const mats = [];
+    for (let a = 0; a < p; a++) {
+      for (let b = 0; b < p; b++) {
+        if (a !== 0) {
+          const invA = modInv(a, p);
+          for (let c = 0; c < p; c++) {
+            const d = modPos((1 + b * c) * invA, p);
+            mats.push([a, b, c, d]);
+          }
+        } else if (b !== 0) {
+          const c = modPos(-modInv(b, p), p);
+          for (let d = 0; d < p; d++) mats.push([0, b, c, d]);
+        }
+      }
+    }
+    return buildMatrixGroup({
+      name: `SL(2,${p})`,
+      latex: `\\mathrm{SL}(2,\\mathbb{F}_{${p}})`,
+      turkishName: `Özel Lineer Grup SL(2, F_${p}) (|G| = ${mats.length})`,
+      dim: 2, p, mats, kind: 'SL', spec: { kind: 'SL', dim: 2, p },
+    });
+  }
+  throw new Error(`SL(${dim}, F_${p}) mertebesi 240 sınırını aşıyor`);
+}
+
+// Projective Special Linear Group PSL(2, F_p) for p ∈ {2, 3, 5, 7} (orders 6, 12, 60, 168).
+export function psl(dim, p) {
+  dim = Math.trunc(dim);
+  p = Math.trunc(p);
+  if (dim !== 2 || !isSmallPrime(p)) {
+    throw new Error('PSL(2, p) için p ∈ {2, 3, 5, 7} asal olmalı');
+  }
+  const seen = new Set();
+  const mats = [];
+  for (let a = 0; a < p; a++) {
+    for (let b = 0; b < p; b++) {
+      if (a !== 0) {
+        const invA = modInv(a, p);
+        for (let c = 0; c < p; c++) {
+          const d = modPos((1 + b * c) * invA, p);
+          const M = canonPsl2([a, b, c, d], p);
+          const k = M.join(',');
+          if (!seen.has(k)) { seen.add(k); mats.push(M); }
+        }
+      } else if (b !== 0) {
+        const c = modPos(-modInv(b, p), p);
+        for (let d = 0; d < p; d++) {
+          const M = canonPsl2([0, b, c, d], p);
+          const k = M.join(',');
+          if (!seen.has(k)) { seen.add(k); mats.push(M); }
+        }
+      }
+    }
+  }
+  return buildMatrixGroup({
+    name: `PSL(2,${p})`,
+    latex: `\\mathrm{PSL}(2,${p})`,
+    turkishName: `Projektif Özel Lineer Grup PSL(2, ${p}) (|G| = ${mats.length})`,
+    dim: 2,
+    p,
+    mats,
+    projective: true,
+    kind: p === 7 ? 'PSL27' : 'PSL',
+    spec: p === 7 ? { kind: 'PSL27' } : { kind: 'PSL', dim: 2, p },
+  });
+}
+
+export function psl2_7() { return psl(2, 7); }
+export function gl3_2() { return gl(3, 2); }
+export function sl2_3() { return sl(2, 3); }
+
+// Finite SU(3) subgroups Δ(3n²) = (Z_n × Z_n) ⋊ Z_3 (order 3n², n = 2..8).
+export function delta3n2(n) {
+  n = Math.trunc(n);
+  if (!Number.isInteger(n) || n < 2 || n > 8) {
+    throw new Error('Δ(3n²) için n 2 ile 8 arasında olmalı (3n² ≤ 192)');
+  }
+  const N = directProduct(cyclic(n), cyclic(n));
+  const H = cyclic(3);
+  const action = (h, idx) => {
+    let j = Math.floor(idx / n), k = idx % n;
+    for (let step = 0; step < h; step++) {
+      const nj = k;
+      const nk = modPos(-j - k, n);
+      j = nj; k = nk;
+    }
+    return j * n + k;
+  };
+  const ord = 3 * n * n;
+  return semiDirect(N, H, action, {
+    name: `Δ(${ord})`,
+    latex: `\\Delta(${ord})`,
+    kind: 'Delta3',
+    spec: { kind: 'Delta3', n },
+    turkishName: `SU(3) Alt Grubu Δ(3·${n}²) = Δ(${ord})`,
+    actionDesc: `c:(j,k) ↦ (k, -j-k) mod ${n}`,
+    extraMeta: { n, su3Series: 'Delta(3n^2)' },
+  });
+}
+
+// Finite SU(3) subgroups Δ(6n²) = (Z_n × Z_n) ⋊ S_3 (order 6n², n = 2..6).
+export function delta6n2(n) {
+  n = Math.trunc(n);
+  if (!Number.isInteger(n) || n < 2 || n > 6) {
+    throw new Error('Δ(6n²) için n 2 ile 6 arasında olmalı (6n² ≤ 216)');
+  }
+  const N = directProduct(cyclic(n), cyclic(n));
+  const H = symmetric(3);
+  // Each σ ∈ S_3 permutes the 3 diagonal phases (j, k, -j-k) via v[i] -> v[σ^{-1}(i)]
+  // Wait: left action requires (σ τ) · v = σ · (τ · v), so (σ · v)_i = v_{σ^{-1}(i)}.
+  const action = (hIdx, idx) => {
+    const p = H.meta.perms[hIdx];
+    const pInv = invertPerm(p);
+    const j = Math.floor(idx / n), k = idx % n;
+    const v = [j, k, modPos(-j - k, n)];
+    const nj = v[pInv[0]];
+    const nk = v[pInv[1]];
+    return nj * n + nk;
+  };
+  const ord = 6 * n * n;
+  return semiDirect(N, H, action, {
+    name: `Δ(${ord})`,
+    latex: `\\Delta(${ord})`,
+    kind: 'Delta6',
+    spec: { kind: 'Delta6', n },
+    turkishName: `SU(3) Alt Grubu Δ(6·${n}²) = Δ(${ord})`,
+    actionDesc: `S₃, (j, k, -j-k) faz üçlüsünü permüte eder (mod ${n})`,
+    extraMeta: { n, su3Series: 'Delta(6n^2)' },
+  });
+}
+
+// Hessian group Σ(216) = (Z_3 × Z_3) ⋊ SL(2,3) of order 216 (projective PSU(3) subgroup; triple cover in SU(3) has order 648).
+export function hessian216() {
+  const N = directProduct(cyclic(3), cyclic(3));
+  const H = sl(2, 3);
+  const mats = H.meta.matrices;
+  const action = (hIdx, idx) => {
+    const [a, b, c, d] = mats[hIdx];
+    const x = Math.floor(idx / 3), y = idx % 3;
+    const nx = (a * x + b * y) % 3;
+    const ny = (c * x + d * y) % 3;
+    return nx * 3 + ny;
+  };
+  return semiDirect(N, H, action, {
+    name: 'Σ(216)',
+    latex: '\\Sigma(216)',
+    kind: 'Hessian',
+    spec: { kind: 'Hessian' },
+    turkishName: 'Hessian Grubu Σ(216) = (Z₃×Z₃) ⋊ SL(2,3) (|G| = 216)',
+    actionDesc: 'SL(2,3) matrisleri F₃² üzerine doğrusal etki eder',
+    extraMeta: { su3CoverOrder: 648 },
+  });
+}
+
+function buildExtendedGroup(spec) {
+  switch (spec.kind) {
+    case 'cube': return cubeRotations();
+    case 'Q2n':
+    case 'Dic': return dicyclic(spec.n ?? 3);
+    case '2T': return binaryTetrahedral();
+    case 'SL23': return sl(2, 3);
+    case '2O': return binaryOctahedral();
+    case '2I': return binaryIcosahedral();
+    case 'T7':
+    case 'Frob': return frobeniusT7();
+    case 'PSL27': return psl2_7();
+    case 'GL32': return gl3_2();
+    case 'GL': return gl(spec.dim ?? 2, spec.p ?? 3);
+    case 'SL': return sl(spec.dim ?? 2, spec.p ?? 3);
+    case 'PSL': return psl(spec.dim ?? 2, spec.p ?? 5);
+    case 'Delta3': return delta3n2(spec.n ?? 3);
+    case 'Delta6': return delta6n2(spec.n ?? 3);
+    case 'Hessian': return hessian216();
+    default: throw new Error(`Bilinmeyen grup türü: ${spec.kind}`);
+  }
+}
+
 

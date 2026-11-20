@@ -1,0 +1,232 @@
+// MathPad Physics & Exceptional Structures (Ramond Part C) — Complete Turkish Syllabus Lessons
+// Covers Ramond Ch. 1 (Preface), Ch. 4 (Hilbert Spaces), Ch. 5.5 (SU(2) Applications),
+// Ch. 6.7.1–6.7.3 (SU(3) in Physics), Ch. 11 (Standard Model & Space-Time), Ch. 12 (Exceptional Structures).
+
+export const FIZIK_LESSONS = [
+  {
+    id: 'hilbert-sonlu',
+    sec: '§4.1',
+    shortTitle: 'Sonlu Hilbert',
+    title: 'Sonlu Hilbert Uzayları ve Üniter Grup Temsilleri',
+    body: [
+      'Kuantum mekaniğinde bir fiziksel sistemin durumları, karmaşık bir iç çarpımlı vektör uzayı olan **Hilbert uzayı** $\\mathcal{H}$’nin birim ışınları $|\\psi\\rangle$ ile temsil edilir. Fizikçi konvansiyonunda iç çarpım ilk argümanda anti-lineer, ikinci argümanda lineerdir: $\\langle \\psi | \\phi \\rangle = \\sum_{k} \\psi_k^* \\phi_k$.',
+      'Wigner teoremine göre bir simetri dönüşümü, olasılık genliklerini $|\\langle \\psi | \\phi \\rangle|^2$ korumalıdır. Sürekli simetri grupları Hilbert uzayında **üniter operatörler** ($U^\\dagger U = I$) olarak etki eder: $\\langle U\\psi | U\\phi \\rangle = \\langle \\psi | U^\\dagger U | \\phi \\rangle = \\langle \\psi | \\phi \\rangle$.',
+    ],
+    theorem: '**Stone & Üniter Temsil:** Bir Lie grubunun $G$ sonlu boyutlu üniter temsili $U(g) = \\exp(-i\\theta^a T^a)$ biçiminde Hermisyen üreteçlerle ($T^{a\\dagger} = T^a$) yazılır. Örneğin spin-$1/2$ kübiti $\\mathcal{H} = \\mathbb{C}^2$ üzerinde $SU(2)$ dönmeleri $U(\\theta, \\hat{n}) = \\exp(-i\\frac{\\theta}{2}\\hat{n}\\cdot\\vec{\\sigma})$ olarak etki eder.',
+    example: '**Çözümlü Örnek:** $|\\psi\\rangle = \\frac{1}{\\sqrt{2}}(|0\\rangle + |1\\rangle)$ ve $|\\phi\\rangle = |0\\rangle$ için $|\\langle\\psi|\\phi\\rangle|^2 = \\frac{1}{2}$. Herhangi bir $U(\\theta, \\hat{n}) \\in SU(2)$ uygulandığında bileşenler değişse de $\\langle U\\psi|U\\phi\\rangle = \\frac{1}{\\sqrt{2}}$ tam olarak sabit kalır.',
+    apply: { label: 'Hilbert & Fermi Lab', tab: 'hilbert-fermi' },
+  },
+  {
+    id: 'fermi-osilator',
+    sec: '§4.2',
+    shortTitle: 'Fermi & SO(2n)',
+    title: 'Fermi Osilatörleri, Jordan–Wigner ve SO(2n) Spinörleri',
+    body: [
+      '$n$ adet fermiyonik mod için yaratma $a_i^\\dagger$ ve yok etme $a_i$ operatörleri **kanonik antikomütasyon bağıntılarını (CAR)** sağlar. Pauli dışarlama ilkesi ($a_i^{\\dagger 2} = 0$) nedeniyle her mod yalnızca $0$ veya $1$ parçacık içerebilir ve Fock uzayının boyutu tam olarak $\\dim\\mathcal{F}_F = 2^n$ olur.',
+      'Matris gösteriminde **Jordan–Wigner dönüşümü**, farklı modlar arasındaki anti-komütasyonu sağlamak için öndeki modlara $\\sigma_z$ zinciri ekler: $a_i = \\sigma_z^{\\otimes (i-1)} \\otimes c \\otimes I^{\\otimes (n-i)}$.',
+    ],
+    theorem: '**Fermi İkilileri ve $SO(2n)$ Clifford Bağlantısı:**\n1. $\\{a_i, a_j^\\dagger\\} = \\delta_{ij},\\quad \\{a_i, a_j\\} = \\{a_i^\\dagger, a_j^\\dagger\\} = 0$, sayı operatörü $N = \\sum_{i=1}^n a_i^\\dagger a_i$.\n2. $E_{ij} = a_i^\\dagger a_j$ ikilileri $[E_{ij}, E_{kl}] = \\delta_{jk} E_{il} - \\delta_{il} E_{kj}$ bağıntısıyla $\\mathfrak{u}(n)$ Lie cebirini üretir.\n3. $\\gamma_{2k-1} = a_k + a_k^\\dagger$ ve $\\gamma_{2k} = -i(a_k - a_k^\\dagger)$ kombinasyonları $2n$-boyutlu **Clifford cebirini** $\\{\\gamma_\\mu, \\gamma_\\nu\\} = 2\\delta_{\\mu\\nu}$ sağlar. $\\Sigma_{\\mu\\nu} = -\\frac{i}{4}[\\gamma_\\mu, \\gamma_\\nu]$ üreteçleri $2^n$-boyutlu $SO(2n)$ Dirac spinörünü kurar; fermiyon paritesi $(-1)^N$ altında $2^n = 2^{n-1}_+ \\oplus 2^{n-1}_-$ iki kiral (Weyl) spinörüne ayrılır!',
+    example: '**Çözümlü Örnek ($n=3$ ve $n=5$):** $n=3$ için $8\\times 8$ matrisler $SO(6) \\cong SU(4)$ grubunun $\\mathbf{4} \\oplus \\bar{\\mathbf{4}}$ spinörlerini verir. $n=5$ içinse $2^5 = 32 = \\mathbf{16}_+ \\oplus \\mathbf{16}_-$ doğrudan **$SO(10)$ Büyük Birleşme** spinörünü ($\\mathbf{16}$) üretir!',
+    apply: { label: 'Fermi Osilatörü Matrisleri', tab: 'hilbert-fermi' },
+  },
+  {
+    id: 'hilbert-sonsuz',
+    sec: '§4.3',
+    shortTitle: 'Bozon & Uyumlu',
+    title: 'Sonsuz Hilbert Uzayları: Bozon Osilatörü ve Uyumlu Durumlar',
+    body: [
+      'Bozonik yaratma/yok etme operatörleri $[a, a^\\dagger] = I$ komütasyon bağıntısını sağlar. Herhangi bir sonlu $D\\times D$ matris çifti için $\\operatorname{Tr}(AB - BA) = 0$ olduğundan, $[a, a^\\dagger] = I$ özdeşliği **hiçbir sonlu boyutlu uzayda sağlanamaz**; Hilbert uzayı zorunlu olarak sonsuz boyutlu ($\\ell^2$) olmalıdır.',
+      'Uygulamada matrisleri $D$ boyutunda kestiğimizde ilk $D-1$ köşegen elemanı $+1$ iken, son köşegen elemanı $-(D-1)$ çıkarak izi sıfırlar — bu, sonlu kesmenin fiziksel sınır uyarısıdır.',
+    ],
+    theorem: '**Uyumlu (Coherent) Durumlar:** Yok etme operatörünün özvektörü $a|\\alpha\\rangle = \\alpha|\\alpha\\rangle$ ($\\alpha \\in \\mathbb{C}$) şu Fock açılımıyla verilir:\n$$|\\alpha\\rangle = e^{-|\\alpha|^2/2} \\sum_{n=0}^{\\infty} \\frac{\\alpha^n}{\\sqrt{n!}} |n\\rangle$$\nParçacık sayısı olasılıkları Poisson dağılımına uyar: $P(n) = e^{-|\\alpha|^2}\\frac{|\\alpha|^{2n}}{n!}$, $\\langle N\\rangle = \\Delta N^2 = |\\alpha|^2$, ve Heisenberg belirsizliğini minimumda doyurur: $\\Delta x \\cdot \\Delta p = \\frac{\\hbar}{2}$.',
+    example: '**Çözümlü Örnek:** $D=8$ kesmesinde $[a, a^\\dagger] = \\operatorname{diag}(1,1,1,1,1,1,1,-7)$ bulunur ($\\operatorname{Tr} = 0$). $\\alpha = 2$ uyumlu durumunda $\\langle N\\rangle = 4$ ve $P(4) = e^{-4} 4^4 / 24 \\approx 0.195$ tepe yapar.',
+    apply: { label: 'Bozon & Uyumlu Durumlar', tab: 'hilbert-fermi' },
+  },
+  {
+    id: 'harmonik-3d',
+    sec: '§5.5.1 & §6.7.1',
+    shortTitle: '3B Osilatör',
+    title: '3B İzotropik Harmonik Osilatör ve Gizli SU(3) Simetrisi',
+    body: [
+      'Üç boyutlu izotropik harmonik osilatörün Hamiltonyeni $H = \\hbar\\omega\\left(a_x^\\dagger a_x + a_y^\\dagger a_y + a_z^\\dagger a_z + \\frac{3}{2}\\right)$ yalnızca geometrik dönme grubu $SO(3)$ altında değil, $a_i^\\dagger$ üçlüsünü karıştıran tüm **üniter $U(3) = SU(3) \\times U(1)$** dönüşümleri altında değişmezdir.',
+      'Bu "kazara" görünen ek dejenerelik, $SO(3)$ simetrisinin ötesindeki dinamik $SU(3)$ grubunun simetrik tensör temsillerinden $(N, 0)$ kaynaklanır.',
+    ],
+    theorem: '**Enerji, Dejenerelik ve $SU(3) \\supset SO(3)$ Dallanması:**\n- Enerji düzeyleri: $E_N = \\left(N + \\frac{3}{2}\\right)\\hbar\\omega$, $N = n_x + n_y + n_z$.\n- Dejenerelik: $d(N) = \\frac{(N+1)(N+2)}{2} = \\dim_{SU(3)}(N, 0)$.\n- Parite $(-1)^N$ sabit olduğundan $SO(3)$ açısal momentum içeriği: $l = N, N-2, \\dots, 1\\text{ veya }0$, ve $\\sum_l (2l+1) = \\frac{(N+1)(N+2)}{2}$.',
+    example: '**Çözümlü Örnek ($N=4$):** $d(4) = \\frac{5\\cdot 6}{2} = 15 = \\dim(4,0)$. İzinli $l$ değerleri $l = 4, 2, 0$ olup boyut toplamı $(2\\cdot 4+1) + (2\\cdot 2+1) + (2\\cdot 0+1) = 9 + 5 + 1 = 15$ tam tutar!',
+    apply: { label: 'Harmonik Osilatör & SU(3)', tab: 'harmonik-su3' },
+  },
+  {
+    id: 'bohr-atomu',
+    sec: '§5.5.2',
+    shortTitle: 'Bohr & SO(4)',
+    title: 'Bohr Atomu, Runge–Lenz Vektörü ve Gizli SO(4) Simetrisi',
+    body: [
+      'Coulomb potansiyeli $V(r) = -e^2/r$ altında hidrojen atomunun enerjisi $E_n = -13.606\\text{ eV}/n^2$ yörüngesel açısal momentum $l$’den bağımsızdır. Klasik mekanikte elips yörüngelerin kapanıp dönmemesini sağlayan korunan **Laplace–Runge–Lenz vektörü** $\\vec{A}$, kuantum mekaniğinde gizli $SO(4)$ simetrisini doğurur.',
+      'Bağlı durumlarda ($E < 0$) ölçeklenmiş Runge–Lenz vektörü $\\vec{K}$ ile açısal momentum $\\vec{L}$, $\\vec{J}_\\pm = \\frac{1}{2}(\\vec{L} \\pm \\vec{K})$ kombinasyonlarıyla birbirinden bağımsız iki $\\mathfrak{su}(2)$ cebirine ayrışır.',
+    ],
+    theorem: '**Pauli’nin Cebirsel Hidrojen Çözümü:**\n1. $\\mathfrak{so}(4) \\cong \\mathfrak{su}(2)_+ \\oplus \\mathfrak{su}(2)_-$ ve $\\vec{L}\\cdot\\vec{K} = 0 \\implies \\vec{J}_+^2 = \\vec{J}_-^2 = j(j+1)$.\n2. Baş kuantum sayısı $n = 2j + 1$ ($j = 0, \\frac{1}{2}, 1, \\dots$) olmak üzere her enerji kabuğu $(j, j)$ temsilidir.\n3. Dejenerelik (spin hariç): $(2j+1)^2 = n^2 = \\sum_{l=0}^{n-1}(2l+1)$ (spin dahil $2n^2$).\n4. Spektral çizgiler: $\\frac{1}{\\lambda} = R_\\infty\\left(\\frac{1}{n_{\\text{alt}}^2} - \\frac{1}{n_{\\text{üst}}^2}\\right)$ — Lyman ($n_{\\text{alt}}=1$, UV), Balmer ($2$, görünür), Paschen ($3$, IR).',
+    example: '**Çözümlü Örnek:** $n=3$ kabuğunda $j = 1$, $SO(4)$ temsili $(1, 1)$ ve dejenerelik $3^2 = 9 = 1(s) + 3(p) + 5(d)$. Balmer-$\\alpha$ ($3 \\to 2$) geçişi $\\Delta E = 1.889\\text{ eV} \\implies \\lambda \\approx 656.3\\text{ nm}$ (kırmızı) verir.',
+    apply: { label: 'Bohr Atomu & Spektrum', tab: 'bohr-so4' },
+  },
+  {
+    id: 'izospin-elliott-sakata',
+    sec: '§5.5.3, §6.7.2–3',
+    shortTitle: 'İzospin & Modeller',
+    title: 'İzospin, Elliott Çekirdek Modeli ve Sakata Modeli',
+    body: [
+      '**İzospin (§5.5.3):** Proton ($938.3\\text{ MeV}$) ve nötronun ($939.6\\text{ MeV}$) neredeyse özdeş kütleleri ile güçlü kuvvetin yük bağımsızlığı, Heisenberg’in onları bir $SU(2)_I$ ikilisinin ($I = \\frac{1}{2}$, $I_3 = \\pm\\frac{1}{2}$) iki durumu olarak birleştirmesine yol açtı. Pionlar $(\\pi^+, \\pi^0, \\pi^-)$ bir $I=1$ üçlüsü oluşturur.',
+      '**Elliott Modeli (§6.7.2):** $sd$-kabuğundaki ($N=2$, $6$ tek-parçacık durumu) çekirdeklerde dört-kutup etkileşimi $Q\\cdot Q$, 3B osilatörün $SU(3)$ simetrisini kırarken $(\\lambda, \\mu)$ temsillerinin içinden $E(L) \\propto L(L+1)$ dönme bantlarını çıkarır (örneğin $^{20}\\text{Ne}$ için $(8,0)$ ve $^{24}\\text{Mg}$ için $(8,4)$).',
+      '**Sakata Modeli (§6.7.3):** $SU(3)$ çeşni simetrisinin ilk girişimi olarak $(p, n, \\Lambda)$ temel üçlü ($\\mathbf{3}$) seçildi. Mezonlar $\\mathbf{3}\\otimes\\bar{\\mathbf{3}} = \\mathbf{8}\\oplus\\mathbf{1}$ başarıyla açıklandı; ancak baryonlar için $\\mathbf{3}\\otimes\\mathbf{3}\\otimes\\bar{\\mathbf{3}} = \\mathbf{15}\\oplus\\bar{\\mathbf{6}}\\oplus\\mathbf{3}\\oplus\\mathbf{3}$ deneyle çelişti ve Gell-Mann/Ne’eman’ın Sekizli Yoluna (ve kesirli yüklü $u,d,s$ kuarklarına) geçildi.',
+    ],
+    theorem: '**Genelleştirilmiş Pauli İlkesi (Döteron):** İki nükleonun toplam dalga fonksiyonu $\\Psi_{\\text{uzay}} \\otimes \\chi_{\\text{spin}} \\otimes \\tau_{\\text{izospin}}$ değiş-tokuş altında **antisimetrik** olmalıdır. Döteronda $L=0$ (S) ve $S=1$ (S) olduğundan $I=0$ (A) zorunludur: $|pn; I=0\\rangle = \\frac{1}{\\sqrt{2}}(|pn\\rangle - |np\\rangle)$.\n**Elliott $SU(3) \\supset SO(3)$ Kuralı:** $K = \\min(\\lambda,\\mu), \\min(\\lambda,\\mu)-2, \\dots$; $K=0$ için $L = \\max(\\lambda,\\mu), \\max-2, \\dots$, $K>0$ için $L = K, K+1, \\dots, K + \\max(\\lambda,\\mu)$.',
+    example: '**Çözümlü Örnek:** $^{24}\\text{Mg}$ çekirdeğinin baskın $SU(3)$ temsili $(\\lambda, \\mu) = (8, 4)$ olup $\\dim = \\frac{9\\cdot 5\\cdot 14}{2} = 315$’tir ve $K=0$ (taban bandı) ile $K=2$ ($\\gamma$-bandı) aynı $SU(3)$ çoklusundan doğar.',
+    apply: { label: 'İzospin, Elliott & Sakata', tab: 'izospin-cekirdek' },
+  },
+];
+
+export const UZAYZAMAN_LESSONS = [
+  {
+    id: 'lorentz-poincare',
+    sec: '§11.1.1',
+    shortTitle: 'Lorentz & Poincaré',
+    title: 'Lorentz Grubu SO(3,1), SL(2,ℂ) ve Poincaré Sınıflandırması',
+    body: [
+      'Özel görelilikte Minkowski metriği $\\eta = \\operatorname{diag}(+1,-1,-1,-1)$’i koruyan dönüşümler ($\\Lambda^T \\eta \\Lambda = \\eta$) $6$ boyutlu **Lorentz grubu $SO(3,1)$**’i oluşturur: $3$ uzaysal dönme ($J_i$) ve $3$ Lorentz boost’u ($K_i$). Aynı eksendeki boost’lar $SO(1,1)$ alt grubunu kurar ve **rapiditeler doğrudan toplanır**: $\\eta_{12} = \\eta_1 + \\eta_2$ ($\\beta = \\tanh\\eta$).',
+      'Kompleksleştirilmiş cebir $\\vec{A} = \\frac{1}{2}(\\vec{J} + i\\vec{K})$, $\\vec{B} = \\frac{1}{2}(\\vec{J} - i\\vec{K})$ ile $\\mathfrak{su}(2)_L \\oplus \\mathfrak{su}(2)_R$’ye ayrışır. Evrensel çift örtü $SL(2,\\mathbb{C})$ olup $X\' = M X M^\\dagger$ ($X = x_\\mu \\sigma^\\mu$) eşlemesiyle $SO^+(3,1)$’e $2$-e-$1$ bağlanır.',
+    ],
+    theorem: '**Lorentz Temsilleri ve Wigner–Poincaré Sınıflandırması:**\n1. Sonlu boyutlu indirgenemez Lorentz temsilleri $(j_1, j_2)$ ile etiketlenir ve boyutu $(2j_1+1)(2j_2+1)$’dir: $(0,0)$ skaler, $(\\frac{1}{2},0)$ sol Weyl, $(0,\\frac{1}{2})$ sağ Weyl, $(\\frac{1}{2},0)\\oplus(0,\\frac{1}{2})$ Dirac, $(\\frac{1}{2},\\frac{1}{2})$ 4-vektör.\n2. Poincaré grubunun iki Casimir değişmezi vardır: kütle karesi $P^2 = m^2$ ve Pauli–Lubanski karesi $W^2 = -m^2 s(s+1)$.\n3. **Wigner Küçük Grupları:** Kütleli parçacıklar ($P^2=m^2>0$) için $SO(3)$ (çift örtü $SU(2)$, $2s+1$ durum); kütlesiz parçacıklar ($P^2=0$) için $ISO(2)$ (sonlu bileşende helisite $\\lambda = \\pm s$).',
+    example: '**Çözümlü Örnek:** $SL(2,\\mathbb{C})$’de $2\\pi$ dönme $M = -I_2$ verir; oysa $X\' = (-I_2)X(-I_2)^\\dagger = X$ olduğundan $SO(3,1)$ matrisi $+I_4$’tür. Spinörlerin $4\\pi$ periyotlu olmasının cebirsel kaynağı budur!',
+    apply: { label: 'Lorentz & Poincaré Lab', tab: 'lorentz-poincare' },
+  },
+  {
+    id: 'konformal-grup',
+    sec: '§11.1.2',
+    shortTitle: 'Konformal SO(4,2)',
+    title: 'Konformal Grup SO(4,2) ve Açı Koruyan Dönüşümler',
+    body: [
+      'Kütlesiz alan teorileri (örneğin vakumda Maxwell denklemleri veya kütlesiz Yang–Mills) Poincaré grubundan daha geniş olan **konformal grup** altında değişmezdir. Konformal dönüşümler metriği yerel bir ölçek çarpanına kadar korur: $g\'_{\\mu\\nu}(x\') = \\Omega^2(x) g_{\\mu\\nu}(x)$, dolayısıyla tüm yerel açıları ve ışık konilerini korur.',
+    ],
+    theorem: '**$d$ Boyutta Konformal Üreteçler ($SO(d, 2)$):**\nPoincaré’nin $d$ ötelemesi ($P_\\mu$) ve $\\frac{d(d-1)}{2}$ Lorentz dönüşümüne ($M_{\\mu\\nu}$) ek olarak $1$ ölçekleme (**dilatasyon** $D: x^\\mu \\to \\lambda x^\\mu$) ve $d$ **özel konformal dönüşüm** (**SCT** $K_\\mu = I \\circ P_\\mu \\circ I$) eklenir:\n$$\\dim SO(d,2) = d + \\frac{d(d-1)}{2} + 1 + d = \\frac{(d+2)(d+1)}{2}$$\n$d = 4$ uzay-zamanda toplam **$15$ üreteç** ($4 + 6 + 1 + 4 = 15$) elde edilir.',
+    example: '**Çözümlü Örnek:** 2B Öklid düzleminde $K$ dönüşümü $x\' = \\frac{x - b\\,r^2}{1 - 2b\\cdot x + b^2 r^2}$ düz kare ızgarayı eğri çember yaylarına bükse de kesişim açıları her noktada tam **$90^\\circ$** kalır.',
+    apply: { label: 'Konformal Izgara Haritası', tab: 'konformal-grup' },
+  },
+  {
+    id: 'renk-kuark',
+    sec: '§11.2.1',
+    shortTitle: 'Renk & Kuarklar',
+    title: 'Renk Simetrisi SU(3)_c ve Kuark Modeli',
+    body: [
+      'Gell-Mann ve Zweig’ın kuark modeli hadronları $6$ çeşni ($u, d, s, c, b, t$) kuarktan kurar. Ancak $\\Delta^{++} = u^\\uparrow u^\\uparrow u^\\uparrow$ ($L=0$, tamamen simetrik uzay $\\times$ spin $\\times$ çeşni) durumu fermiyonik Pauli ilkesiyle çelişir gibi görünüyordu.',
+      'Çözüm, her kuarka yeni bir **renk ($SU(3)_c$ temel üçlüsü $\\mathbf{3}$: Kırmızı, Yeşil, Mavi)** kuantum sayısı eklemektir. Gözlenen tüm serbest hadronlar **renk teklisi ($\\mathbf{1}$)** olmak zorundadır (renk hapsi).',
+    ],
+    theorem: '**Renk Teklisi Kuralları ve Gell-Mann–Nishijima:**\n- Baryonlar ($qqq$): $\\mathbf{3}\\otimes\\mathbf{3}\\otimes\\mathbf{3} = \\mathbf{10}_S \\oplus \\mathbf{8}_M \\oplus \\mathbf{8}_M \\oplus \\mathbf{1}_A$ — tekli $\\frac{1}{\\sqrt{6}}\\varepsilon_{abc} q^a q^b q^c$ tamamen **antisimetrik**tir ve $\\Delta^{++}$ sorununu çözer!\n- Mezonlar ($q\\bar{q}$): $\\mathbf{3}\\otimes\\bar{\\mathbf{3}} = \\mathbf{8} \\oplus \\mathbf{1}$ — tekli $\\frac{1}{\\sqrt{3}}(r\\bar{r}+g\\bar{g}+b\\bar{b})$.\n- Yük formülü: $Q = I_3 + \\frac{B + S + C + B\' + T}{2}$.',
+    example: '**Çözümlü Örnek:** $\\Omega^- = sss$ için $Q = 3(-\\frac{1}{3}) = -1$, $S = -3$, $B = 1$, $I_3 = 0$; $Q = 0 + \\frac{1 - 3}{2} = -1$ doğrulanır.',
+    apply: { label: 'Renk & Hadron Kurucu', tab: 'renk-kuark' },
+  },
+  {
+    id: 'ayar-teorileri',
+    sec: '§11.3 & §11.4',
+    shortTitle: 'Ayar Teorileri',
+    title: 'Değişmez Lagranjiyenler ve Değişmeli Olmayan (Yang–Mills) Ayar Teorileri',
+    body: [
+      'Küresel bir faz simetrisini $\\psi(x) \\to U(x)\\psi(x)$ biçiminde **yerel** (uzay-zaman noktasına bağlı) kılmak istediğimizde sıradan türev $\\partial_\\mu\\psi$ kovaryant dönüşmez. Simetriyi geri kazanmak için Lie cebiri değerli bir ayar alanı $A_\\mu = A_\\mu^a T^a$ ve **kovaryant türev** $D_\\mu = \\partial_\\mu - i g A_\\mu^a T^a$ eklemek zorundayız.',
+    ],
+    theorem: '**Yang–Mills Alan Şiddeti ve Ayar Bozonu Sayısı:**\n$$[D_\\mu, D_\\nu] = -i g F_{\\mu\\nu}^a T^a, \\qquad F_{\\mu\\nu}^a = \\partial_\\mu A_\\nu^a - \\partial_\\nu A_\\mu^a + g f^{abc} A_\\mu^b A_\\nu^c$$\nDeğişmez Lagranjiyen $\\mathcal{L} = -\\frac{1}{4} F_{\\mu\\nu}^a F^{a\\,\\mu\\nu} + \\bar{\\psi}(i\\gamma^\\mu D_\\mu - m)\\psi$’dir. Her basit/Abelyen grup faktörü için ayar bozonu sayısı $\\dim G$’dir: $U(1) \\to 1$ foton, $SU(2) \\to 3$ $W$-bozonu, $SU(3) \\to 8$ gluon. $f^{abc} \\neq 0$ terimi gluonların ve $W$-bozonlarının **kendi kendileriyle etkileşmesine** yol açar.',
+    example: '**Çözümlü Örnek:** $SU(N)$ için $\\dim SU(N) = N^2 - 1$: $N=2 \\implies 3$ zayıf bozon ($f^{abc}=\\varepsilon^{abc}$), $N=3 \\implies 8$ gluon. Abelyen $U(1)$’de $f=0$ olduğundan fotonlar doğrusal olarak üst üste biner.',
+    apply: { label: 'Ayar Teorileri & SM', tab: 'standart-model' },
+  },
+  {
+    id: 'standart-model',
+    sec: '§11.5',
+    shortTitle: 'Standart Model',
+    title: 'Standart Model: Anomali İptali ve Elektrozayıf Kırılma',
+    body: [
+      'Standart Model’in ayar grubu $G_{\\text{SM}} = SU(3)_c \\times SU(2)_L \\times U(1)_Y$’dir. Zayıf etkileşim kiral olduğundan sol-elli fermiyonlar $SU(2)_L$ ikilileri ($Q_L, L_L$), sağ-elli fermiyonlar ise tekli ($u_R, d_R, e_R$, opsiyonel $\\nu_R$) olarak dönüşür ve tüm durumlar $Q = T_3 + Y$ kuralını sağlar.',
+      'Kiral bir ayar teorisinin kuantum düzeyinde tutarlı (üniter ve renormalize edilebilir) kalabilmesi için tüm üçgen diyagram **ayar ve kütleçekim anomalileri** tam olarak sıfırlanmalıdır.',
+    ],
+    theorem: '**Tek Ailede Beş Mucizevi Anomali İptali:**\nSol-elli ($+1$) ve sağ-elli ($-1$) ağırlıklarla tek bir nesil üzerinde:\n1. $\\sum Y = 0$ ve $[\\text{Grav}]^2 U(1)_Y = 0$\n2. $\\sum Y^3 = 0$\n3. $[SU(3)_c]^2 U(1)_Y = \\frac{1}{2}(2Y_{Q_L} - Y_{u_R} - Y_{d_R}) = 0$\n4. $[SU(2)_L]^2 U(1)_Y = \\frac{1}{2}(N_c Y_{Q_L} + Y_{L_L}) = \\frac{1}{2}(3\\cdot\\frac{1}{6} - \\frac{1}{2}) = 0$\n5. $[SU(3)_c]^3 = 0$ ve Witten $SU(2)_L$ global anomalisi (çift sayıda ikili: $3+1=4$).\n**Higgs Kırılması ($H \\sim (1,2)_{+1/2}$):** $\\langle H\\rangle = \\frac{1}{\\sqrt{2}}(0, v)^T$ ($v \\approx 246.2\\text{ GeV}$) simetriyi $SU(2)_L\\times U(1)_Y \\to U(1)_{\\text{em}}$ kırar: $M_W = \\frac{1}{2}gv$, $M_Z = \\frac{M_W}{\\cos\\theta_W}$, $\\rho = \\frac{M_W^2}{M_Z^2\\cos^2\\theta_W} = 1$.',
+    example: '**Çözümlü Örnek:** $[SU(2)_L]^2 U(1)_Y = 0$ koşulu kuarkların $N_c = 3$ rengi ile lepton yüklerini kilitler: $Q_p + Q_e = (2Q_u + Q_d) + Q_e = 0$ atomun elektriksel nötrlüğünü zorunlu kılar!',
+    apply: { label: 'SM Tablosu & Anomali Hesaplayıcı', tab: 'standart-model' },
+  },
+  {
+    id: 'buyuk-birlesme',
+    sec: '§11.6',
+    shortTitle: 'Büyük Birleşme',
+    title: 'Büyük Birleşme Teorileri: SU(5), SO(10) ve E₆',
+    body: [
+      'Georgi ve Glashow, $G_{\\text{SM}}$’nin rank-$4$ basit grup $SU(5)$ içine tek bir bağlanma sabitiyle gömülebileceğini gösterdi. Bir ailenin $15$ sol-elli Weyl fermiyonu anomali-serbest $\\bar{\\mathbf{5}} \\oplus \\mathbf{10}$ çiftine tam sığar. $24$ ayar bozonu ise $12$ SM bozonunun yanında kuarkları leptonlara dönüştüren $12$ ağır $X, Y$ leptokuark bozonu ekler.',
+      'Bir adım ötede **$SO(10)$** tüm aileyi ve sağ-elli nötrinoyu ($\\nu_L^c$) tek bir $\\mathbf{16}$ kiral spinöründe birleştirir ($\\mathbf{16} = \\mathbf{10}\\oplus\\bar{\\mathbf{5}}\\oplus\\mathbf{1}$). **$E_6$** ise temel $\\mathbf{27} = \\mathbf{16}\\oplus\\mathbf{10}\\oplus\\mathbf{1}$ temsiliyle istisnai yapılara bağlanır.',
+    ],
+    theorem: '**$SU(5)$’te Weinberg Açısı Öngörüsü:** $T_3$ ve $Q$’nun aynı basit $SU(5)$ grubunun üreteçleri olması, herhangi bir tam temsilde iz oranını sabitler:\n$$\\sin^2\\theta_W\\Big|_{M_{\\text{GUT}}} = \\frac{\\operatorname{Tr}(T_3^2)}{\\operatorname{Tr}(Q^2)} = \\frac{1/2}{4/3} = \\frac{3}{8} = 0.375$$\n**Proton Bozunması:** $X, Y$ bozonları baryon sayısını koruma zorunluluğunu kırarak $p \\to e^+ \\pi^0$ bozunmasına yol açar; Super-Kamiokande sınırı $\\tau_p > 2.4\\times 10^{34}\\text{ yıl}$ minimal $SU(5)$’i dışlamış, $M_{\\text{GUT}} \\gtrsim 10^{16}\\text{ GeV}$ ölçeğini işaret etmiştir.',
+    example: '**Çözümlü Örnek:** $\\bar{\\mathbf{5}} = (d^c_r, d^c_g, d^c_b, e^-, -\\nu)_L$ üzerinde $\\operatorname{Tr}(Q) = 3(\\frac{1}{3}) - 1 + 0 = 0$ kendiliğinden **yük kuantalanmasını** açıklar: $Q_d = \\frac{1}{3} Q_e$!',
+    apply: { label: 'GUT Multiplet Gezgini', tab: 'buyuk-birlesme' },
+  },
+  {
+    id: 'aile-simetrileri',
+    sec: '§11.7',
+    shortTitle: 'Aile Simetrileri',
+    title: 'Aile Simetrileri ve Tribimaximal Nötrino Karışımı',
+    body: [
+      'Standart Model’de ayar etkileşimleri üç fermiyon neslini özdeş görse de kütleler ve karışım açıları (kuarklarda küçük CKM açıları, nötrinolarda büyük PMNS açıları) çarpıcı bir hiyerarşi sergiler. Üç aileyi tek bir $3$-boyutlu indirgenemez temsilde ($\\mathbf{3}$) toplamak için $SO(3)$, $SU(2)$ ve $SU(3)$’ün **sonlu değişmeli olmayan alt grupları** ($A_4, S_4, A_5, T\', \\Delta(27), PSL_2(7)$) kullanılır.',
+      'Nötrino salınım verileri ilk yaklaşımda **Tribimaximal (TBM)** karışım matrisine çok yakındır; bu matrisin kütle matrisi $M_\\nu$ bir Klein dörtlü grubu $V_4 = \\langle S_{\\mu\\tau}, S_2\\rangle \\subset S_4$ altında değişmezdir.',
+    ],
+    theorem: '**Tribimaximal (TBM) Karışım Matrisi:**\n$$U_{\\text{TBM}} = \\begin{pmatrix} \\sqrt{2/3} & 1/\\sqrt{3} & 0 \\\\ -1/\\sqrt{6} & 1/\\sqrt{3} & -1/\\sqrt{2} \\\\ -1/\\sqrt{6} & 1/\\sqrt{3} & 1/\\sqrt{2} \\end{pmatrix}$$\nÖngörüler: $\\sin^2\\theta_{12} = \\frac{1}{3}$, $\\sin^2\\theta_{23} = \\frac{1}{2}$, $\\theta_{13} = 0$. Deneyde ölçülen $\\theta_{13} \\approx 8.5^\\circ$ ($\\sin^2\\theta_{13}\\approx 0.022$), $A_4/S_4$ simetrisinin küçük kırılma terimleriyle açıklanır. Bu sonlu alt grupların detaylı cebirsel yapısı ve McKay eşleşmesi için **Temsiller → Örtüler & İkili Gruplar** sekmesine geçebilirsin.',
+    example: '**Çözümlü Örnek:** $A_4$ (mertebe $12$), $3$-boyutlu indirgenemez temsile sahip en küçük sonlu gruptur ($12 = 1^2+1^2+1^2+3^2$). Bu sayede $(e, \\mu, \\tau)$ leptonları tek bir $\\mathbf{3}$’te toplanabilir.',
+    apply: { label: 'Aile Simetrileri & PMNS Lab', tab: 'aile-simetrileri' },
+  },
+];
+
+export const OZEL_LESSONS = [
+  {
+    id: 'onsoz-simetri',
+    sec: '§1',
+    shortTitle: 'Önsöz & Simetri',
+    title: 'Simetrilerin İzinde: Duvar Kağıtları, Platon Katıları ve Galois',
+    body: [
+      'Pierre Ramond’un önsözü, grup teorisinin köklerini iki büyük kaynağa bağlar: **geometrik simetri** (kristaller, düzlem döşemeleri, Platon katıları) ve **cebirsel denklemlerin çözülebilirliği** (Évariste Galois’nın polinom kökleri permütasyonları).',
+      '2B düzlemdeki periyodik desenler, kristalografik kısıtlama teoremi ($2\\cos\\theta \\in \\mathbb{Z} \\implies n \\in \\{1,2,3,4,6\\}$) nedeniyle tam **$17$ duvar kağıdı grubuna** (IUC simgeleri `p1`’den `p6m`’e) ayrılır. 3B’de ise yalnızca **$5$ düzgün Platon katısı** vardır ve dönme grupları yalnızca $A_4$ (dörtyüzlü), $S_4$ (küp/sekizyüzlü) ve $A_5$ (onikiyüzlü/yirmiyüzlü) olur.',
+    ],
+    theorem: '**Galois Teoremi ve Beşinci Derece Denklemler:** Bir polinomun köklerle ($+, -, \\times, \\div, \\sqrt[k]{\\cdot}$) çözülebilmesi ancak ve ancak Galois grubunun **çözülebilir (solvable)** olmasıyla mümkündür. $S_2, S_3, S_4$ çözülebilirdir; oysa $n \\ge 5$ için $A_n \\triangleleft S_n$ **basit ve Abelyen olmayan** bir grup olduğundan genel $5.$ derece denklemin kök formülü yoktur (Abel–Ruffini).',
+    example: '**Çözümlü Örnek:** Yirmiyüzlünün dönme grubu olan $A_5$ (mertebe $60$) ile $5.$ derece polinomların çözümsüzlüğünü yaratan basit grup $A_5$ birebir **aynı gruptur** — geometri ile cebirin çarpıcı birliği!',
+    apply: { label: 'Simetri Galerisi (17 Desen & 5 Katı)', tab: 'simetri-galerisi' },
+  },
+  {
+    id: 'hurwitz-cebirleri',
+    sec: '§12.1',
+    shortTitle: 'Hurwitz & Oktoniyon',
+    title: 'Hurwitz Cebirleri: ℝ, ℂ, ℍ, 𝕆 ve Fano Düzlemi',
+    body: [
+      'Bir cebirde her $x, y$ için $\\|xy\\| = \\|x\\|\\|y\\|$ (**norm çarpımsallığı**) sağlanıyorsa bu yapıya **normlu bölme cebiri** (Hurwitz cebiri) denir. **Cayley–Dickson ikileme kurulumu** $(p,q)(r,s) = (pr - \\bar{s}q,\\; sp + q\\bar{r})$ ile boyutu her ikiye katladığımızda bir cebirsel özellik kaybedilir:',
+      '- $\\mathbb{R}$ ($\\dim 1$): sıralı, değişmeli, birleşmeli.\n- $\\mathbb{C}$ ($\\dim 2$): sıralama kaybolur; değişmeli, birleşmeli.\n- $\\mathbb{H}$ ($\\dim 4$, kuaterniyonlar): değişmelilik kaybolur ($ij = k = -ji$); birleşmeli.\n- $\\mathbb{O}$ ($\\dim 8$, oktoniyonlar): birleşmelilik kaybolur ($[x,y,z] \\neq 0$), ancak **alternatifsellik** ($[x,x,y]=0$) korunur!',
+    ],
+    theorem: '**Hurwitz Teoremi (1898):** Gerçel sayılar üzerinde normlu bölme cebirleri yalnızca **$1, 2, 4$ ve $8$** boyutlarında vardır ($\\mathbb{R}, \\mathbb{C}, \\mathbb{H}, \\mathbb{O}$). Bir sonraki adım olan $16$-boyutlu **sedeniyonlarda** sıfır bölenler ortaya çıkar: örneğin $(e_3 + e_{10})(e_6 - e_{15}) = 0$.\n**Fano Düzlemi ve $G_2$:** Oktoniyonun $7$ sanal biriminin ($e_1\\dots e_7$) çarpım tablosu, $7$ nokta ve $7$ yönlü doğrudan oluşan Fano düzlemiyle kodlanır; oktoniyonların otomorfizma grubu en küçük istisnai Lie grubu **$G_2$** ($\\dim 14$)’dir!',
+    example: '**Çözümlü Örnek:** Cayley–Dickson oktoniyonlarında $(e_1 e_2)e_4 = e_3 e_4 = +e_7$ iken $e_1(e_2 e_4) = e_1 e_6 = -e_7$ olduğundan birleştirici $[e_1, e_2, e_4] = 2e_7 \\neq 0$ bulunur; buna karşın $(e_1 e_1)e_4 = -e_4 = e_1(e_1 e_4)$ sağlanır.',
+    apply: { label: 'Hurwitz & Fano Laboratuvarı', tab: 'hurwitz-cebirleri' },
+  },
+  {
+    id: 'albert-cebiri',
+    sec: '§12.2',
+    shortTitle: 'Albert Cebiri J₃(𝕆)',
+    title: 'Hurwitz Cebirleri Üzerinde Matrisler ve Albert Cebiri J₃(𝕆)',
+    body: [
+      'Bir Hurwitz cebiri $\\mathbb{K} \\in \\{\\mathbb{R}, \\mathbb{C}, \\mathbb{H}, \\mathbb{O}\\}$ üzerindeki $3\\times 3$ Hermisyen matrisler $H_3(\\mathbb{K})$ ($A^\\dagger = A$, köşegende $3$ reel, köşegen dışında $3$ bağımsız $\\mathbb{K}$ elemanı), simetrik **Jordan çarpımı** $A \\circ B = \\frac{1}{2}(AB + BA)$ altında kapalıdır ve boyutu $\\dim H_3(\\mathbb{K}) = 3 + 3\\dim\\mathbb{K}$’dır.',
+      '$\\mathbb{K} = \\mathbb{R}, \\mathbb{C}, \\mathbb{H}$ için boyutlar $6, 9, 15$ olup standart matris cebirlerine gömülebilirler. Ancak $\\mathbb{K} = \\mathbb{O}$ birleşmeli olmadığından $4\\times 4$ ve daha büyük Hermisyen oktoniyon matrisleri Jordan özdeşliğini bozar; yalnızca **$3\\times 3$** durum bir Jordan cebiri oluşturur!',
+    ],
+    theorem: '**İstisnai Albert Cebiri $J_3(\\mathbb{O})$:**\n1. Boyutu $\\dim J_3(\\mathbb{O}) = 3 + 3\\cdot 8 = \\mathbf{27}$’dir ve herhangi bir birleşmeli cebire gömülemeyen tek basit sonlu boyutlu istisnai Jordan cebiridir.\n2. Değişmelidir ($A\\circ B = B\\circ A$) ve **Jordan özdeşliğini** sağlar: $(A\\circ B)\\circ A^2 = A\\circ(B\\circ A^2)$.\n3. Otomorfizma grubu **$F_4$** ($\\dim 52$), Freudenthal kübik determinantını $\\det(A) = d_1 d_2 d_3 + 2\\operatorname{Re}(x_1 x_2 x_3) - \\sum d_i|x_i|^2$ koruyan grup ise **$E_6$** ($\\dim 78$)’dır!',
+    example: '**Çözümlü Örnek:** $E_6$’nın $\\mathbf{27}$ temel temsili, Albert cebiri $J_3(\\mathbb{O})$’nin kendisidir. Bu $27 = 16 + 10 + 1$ ayrışmasıyla Standart Model ailesinin $E_6$ GUT gömmesine doğrudan bağlanır.',
+    apply: { label: 'Albert Cebiri Hesaplayıcı', tab: 'hurwitz-cebirleri' },
+  },
+  {
+    id: 'sihirli-kare',
+    sec: '§12.3',
+    shortTitle: 'Sihirli Kare',
+    title: 'Freudenthal–Tits Sihirli Karesi ve İstisnai Lie Cebirleri',
+    body: [
+      'Dört Hurwitz cebiri $\\mathbb{R}, \\mathbb{C}, \\mathbb{H}, \\mathbb{O}$ çiftini birleştiren **Freudenthal–Tits Sihirli Karesi**, $G_2$ dışındaki tüm istisnai basit Lie cebirlerini ($F_4, E_6, E_7, E_8$) tek bir simetrik $4\\times 4$ tabloda üretir!',
+      'Klasik Tits kurulumu bir bölme cebiri $\\mathbb{A}$ ile $J_3(\\mathbb{B})$ Jordan cebirini birleştirerek $\\mathcal{L}(\\mathbb{A}, J_3(\\mathbb{B})) = \\operatorname{Der}(\\mathbb{A}) \\oplus (\\mathbb{A}_0 \\otimes J_3(\\mathbb{B})_0) \\oplus \\operatorname{Der}(J_3(\\mathbb{B}))$ cebirini verir. Barton–Sudbery üçlülük (triality) formülü ise karenin $\\mathbb{A} \\leftrightarrow \\mathbb{B}$ simetrisini açıkça görünür kılar.',
+    ],
+    theorem: '**İki Eşdeğer Boyut Formülü:**\n1. **Barton–Sudbery:** $\\dim\\mathfrak{m}(\\mathbb{A},\\mathbb{B}) = \\dim\\mathfrak{tri}(\\mathbb{A}) + \\dim\\mathfrak{tri}(\\mathbb{B}) + 3\\dim(\\mathbb{A})\\dim(\\mathbb{B})$.\n2. **Tits:** $\\dim\\mathcal{L}(\\mathbb{A}, J_3(\\mathbb{B})) = \\dim\\operatorname{Der}(\\mathbb{A}) + (\\dim\\mathbb{A}-1)(3\\dim\\mathbb{B}+2) + \\dim\\operatorname{Der}(J_3(\\mathbb{B}))$.\nSon satır ($\\mathbb{O}$ ile eşleşen): $F_4(52),\\; E_6(78),\\; E_7(133),\\; E_8(248)$.',
+    example: '**Çözümlü Örnek ($E_8 = \\mathfrak{m}(\\mathbb{O}, \\mathbb{O})$):** $\\dim\\mathfrak{tri}(\\mathbb{O}) = \\dim\\mathfrak{so}(8) = 28$ olduğundan Barton–Sudbery: $28 + 28 + 3\\cdot 8\\cdot 8 = 56 + 192 = \\mathbf{248}$. Tits: $14 + 7\\cdot 26 + 52 = 14 + 182 + 52 = \\mathbf{248}$!',
+    apply: { label: 'Freudenthal–Tits Sihirli Karesi', tab: 'sihirli-kare' },
+  },
+];
