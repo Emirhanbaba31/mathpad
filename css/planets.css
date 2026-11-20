@@ -284,7 +284,7 @@ body[data-page="evren"] #space .pl-stage * {
   inset: -12%;
   display: block;
   pointer-events: none;
-  background: url("../textures/2k_stars_milky_way.jpg") center / cover no-repeat;
+  background: url("../textures/1k/1k_stars_milky_way.jpg") center / cover no-repeat;
   opacity: .11;
   mix-blend-mode: screen;
   transform: rotate(-14deg) scale(1.12);
@@ -464,7 +464,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="mercury"] .pl-tex {
-  background-image: url("../textures/2k_mercury.jpg");
+  background-image: url("../textures/1k/1k_mercury.jpg");
   --px0: 24%;
   --px1: -176%;
   --spin-dur: 190s;
@@ -565,7 +565,7 @@ body[data-page="evren"] #space .pl-stage * {
 
 /* Retrograde rotation: px1 = px0 + 200% */
 .pl-world[data-p="venus"] .pl-tex {
-  background-image: url("../textures/2k_venus_atmosphere.jpg");
+  background-image: url("../textures/1k/1k_venus_atmosphere.jpg");
   --px0: 18%;
   --px1: 218%;
   --spin-dur: 165s;
@@ -624,7 +624,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="earth"] .pl-tex {
-  background-image: url("../textures/2k_earth_daymap.jpg");
+  background-image: url("../textures/1k/1k_earth_daymap.jpg");
   --px0: 76%;
   --px1: -124%;
   --spin-dur: 132s;
@@ -632,7 +632,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="earth"] .pl-clouds {
-  background-image: url("../textures/2k_earth_clouds.jpg");
+  background-image: url("../textures/1k/1k_earth_clouds.jpg");
   background-repeat: repeat-x;
   background-size: 200% 100%;
   --px0: 52%;
@@ -646,7 +646,7 @@ body[data-page="evren"] #space .pl-stage * {
 
 /* City lights locked to Earth's continents, masked cleanly onto the night side */
 .pl-world[data-p="earth"] .pl-night {
-  background-image: url("../textures/2k_earth_nightmap.jpg");
+  background-image: url("../textures/1k/1k_earth_nightmap.jpg");
   background-repeat: repeat-x;
   background-size: 200% 100%;
   --px0: 76%;
@@ -693,7 +693,7 @@ body[data-page="evren"] #space .pl-stage * {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: url("../textures/2k_moon.jpg") 30% 50% / 200% 100% repeat-x;
+  background: url("../textures/1k/1k_moon.jpg") 30% 50% / 200% 100% repeat-x;
   --px0: 30%;
   --px1: -170%;
   animation: pl-spin 220s linear infinite;
@@ -783,7 +783,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="mars"] .pl-tex {
-  background-image: url("../textures/2k_mars.jpg");
+  background-image: url("../textures/1k/1k_mars.jpg");
   --px0: 42%;
   --px1: -158%;
   --spin-dur: 126s;
@@ -848,7 +848,7 @@ body[data-page="evren"] #space .pl-stage * {
 
 /* Great Red Spot at u ~ 0.365 starts framed prominently on the sunlit face */
 .pl-world[data-p="jupiter"] .pl-tex {
-  background-image: url("../textures/2k_jupiter.jpg");
+  background-image: url("../textures/1k/1k_jupiter.jpg");
   --px0: 36%;
   --px1: -164%;
   --spin-dur: 88s;
@@ -963,7 +963,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="saturn"] .pl-tex {
-  background-image: url("../textures/2k_saturn.jpg");
+  background-image: url("../textures/1k/1k_saturn.jpg");
   --px0: 15%;
   --px1: -185%;
   --spin-dur: 96s;
@@ -1020,7 +1020,7 @@ body[data-page="evren"] #space .pl-stage * {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: url("../textures/2k_saturn_ring_alpha.png") right center / 27% 100% no-repeat;
+  background: url("../textures/1k/1k_saturn_ring_alpha.png") right center / 27% 100% no-repeat;
   opacity: .38;
   mix-blend-mode: screen;
   -webkit-mask-image: radial-gradient(closest-side, transparent 0% 47%, #000 48% 98%, transparent 99%);
@@ -1101,7 +1101,7 @@ body[data-page="evren"] #space .pl-stage * {
 
 /* Retrograde rotation */
 .pl-world[data-p="uranus"] .pl-tex {
-  background-image: url("../textures/2k_uranus.jpg");
+  background-image: url("../textures/1k/1k_uranus.jpg");
   --px0: 20%;
   --px1: 220%;
   --spin-dur: 118s;
@@ -1181,7 +1181,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="neptune"] .pl-tex {
-  background-image: url("../textures/2k_neptune.jpg");
+  background-image: url("../textures/1k/1k_neptune.jpg");
   --px0: 46%;
   --px1: -154%;
   --spin-dur: 102s;
@@ -1243,7 +1243,7 @@ body[data-page="evren"] #space .pl-stage * {
 }
 
 .pl-world[data-p="sun"] .pl-tex {
-  background-image: url("../textures/2k_sun.jpg");
+  background-image: url("../textures/1k/1k_sun.jpg");
   --px0: 12%;
   --px1: -188%;
   --spin-dur: 148s;
@@ -1551,16 +1551,16 @@ html:is([data-theme="paper"], [data-theme="night"]) .pl-mode-note {
   to   { background-position-x: var(--ox1); }
 }
 
-.pl-orb-mercury { background-image: url("../textures/2k_mercury.jpg"); }
-.pl-orb-venus   { background-image: url("../textures/2k_venus_atmosphere.jpg"); --ox0: 20%; --ox1: 220%; }
-.pl-orb-earth   { background-image: url("../textures/2k_earth_daymap.jpg"); --ox0: 74%; --ox1: -126%; }
-.pl-orb-mars    { background-image: url("../textures/2k_mars.jpg"); }
-.pl-orb-jupiter { background-image: url("../textures/2k_jupiter.jpg"); --ox0: 34%; --ox1: -166%; }
-.pl-orb-saturn  { background-image: url("../textures/2k_saturn.jpg"); }
-.pl-orb-uranus  { background-image: url("../textures/2k_uranus.jpg"); --ox0: 20%; --ox1: 220%; }
-.pl-orb-neptune { background-image: url("../textures/2k_neptune.jpg"); }
+.pl-orb-mercury { background-image: url("../textures/1k/1k_mercury.jpg"); }
+.pl-orb-venus   { background-image: url("../textures/1k/1k_venus_atmosphere.jpg"); --ox0: 20%; --ox1: 220%; }
+.pl-orb-earth   { background-image: url("../textures/1k/1k_earth_daymap.jpg"); --ox0: 74%; --ox1: -126%; }
+.pl-orb-mars    { background-image: url("../textures/1k/1k_mars.jpg"); }
+.pl-orb-jupiter { background-image: url("../textures/1k/1k_jupiter.jpg"); --ox0: 34%; --ox1: -166%; }
+.pl-orb-saturn  { background-image: url("../textures/1k/1k_saturn.jpg"); }
+.pl-orb-uranus  { background-image: url("../textures/1k/1k_uranus.jpg"); --ox0: 20%; --ox1: 220%; }
+.pl-orb-neptune { background-image: url("../textures/1k/1k_neptune.jpg"); }
 .pl-orb-sun     {
-  background-image: url("../textures/2k_sun.jpg");
+  background-image: url("../textures/1k/1k_sun.jpg");
   box-shadow:
     inset 0 0 8px rgba(255, 118, 16, .65),
     0 0 14px rgba(255, 164, 52, .62);

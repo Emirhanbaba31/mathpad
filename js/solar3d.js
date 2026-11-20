@@ -329,7 +329,8 @@ export function mountSolar3D(container, options = {}) {
   let dead = false;
   const loader = new THREE.TextureLoader();
   const tex = (name, srgb = true) => {
-    const t = keep(loader.load('textures/' + TEX[name], () => kick()));
+    // the small dashboard preview uses the 1024 px copies: a quarter of the memory of the 2048 px maps
+    const t = keep(loader.load(preview ? 'textures/1k/' + TEX[name].replace('2k_', '1k_') : 'textures/' + TEX[name], () => kick()));
     t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
     t.anisotropy = aniso;
     return t;
