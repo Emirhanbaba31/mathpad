@@ -347,6 +347,7 @@ function nav() {
     <button type="button" class="dock-new" data-act="new" aria-label="Yeni soru">${icon('plus')}</button>
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
     ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
+    ${link('#/grup', 'grid', 'Grup Teorisi', here === 'grup', '', 'nav-desktop-only')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
     <div class="nav-foot">${syncPill()}${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
   fx.syncNav();
@@ -616,10 +617,16 @@ function review() {
   loadThumbs(view);
 }
 
+const groupEntryCard = () => `<a href="#/grup" class="card pad grp-entry" aria-label="Grup Teorisi Merkezi'ni aç">
+  <span class="grp-entry-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 3 20 8 20 16 12 21 4 16 4 8"/><circle cx="12" cy="12" r="2.6"/><path d="M12 3v6.4M20 8l-5.6 2.8M4 8l5.6 2.8M12 21v-6.4"/></svg></span>
+  <span class="grp-entry-txt"><b>Grup Teorisi Merkezi</b><span>Cayley tablosu, simetriler, permütasyonlar, alt grup kafesi, homomorfizmalar, teoremler ve quiz</span></span>
+  <span class="grp-entry-go">Keşfet →</span></a>`;
+
 const TOOLS = [['calc', 'calc', 'Hesap makinesi'], ['plot', 'wave', 'Grafik & Bode'], ['matrix', 'matrix', 'Matris / Denklem'], ['phasor', 'phasor', 'Fazör'], ['resistor', 'resistor', 'Direnç renk kodu'], ['formulas', 'sigma', 'Formül kağıdı']];
 function tools(tab = 'calc', cid) {
   if (!TOOLS.some(t => t[0] === tab)) tab = 'calc';
   view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Araçlar</p><h1>${TOOLS.find(t => t[0] === tab)[2]}</h1></div></header>
+    ${groupEntryCard()}
     <div class="tabs">${TOOLS.map(([k, ic, l]) => `<a href="#/tools/${k}" class="tab ${k === tab ? 'on' : ''}">${icon(ic)}<span>${l}</span></a>`).join('')}</div>
     <div class="card pad tool-body" data-tool></div></div>`;
   const el = $('[data-tool]');
@@ -631,9 +638,20 @@ async function sim(id) {
   const { SIMS, mountSim } = await import('./sim.js');
   const cur = SIMS.find(x => x.id === id) || SIMS[0];
   view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Simülasyon merkezi</p><h1>${esc(cur.title)}</h1></div></header>
+    ${groupEntryCard()}
     <div class="tabs">${SIMS.map(x => `<a href="#/sim/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
     <div class="card pad tool-body sim-body" data-sim></div></div>`;
   return mountSim($('[data-sim]'), cur.id);
+}
+
+// Group Theory Study Center (#/grup): loaded on demand like sim
+async function groupCenter(tab) {
+  const { GROUP_TABS, mountGroupCenter } = await import('./groupcenter.js');
+  const cur = GROUP_TABS.find(x => x.id === tab) || GROUP_TABS[0];
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Grup Teorisi Merkezi</p><h1>${esc(cur.title)}</h1></div></header>
+    <div class="tabs">${GROUP_TABS.map(x => `<a href="#/grup/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
+    <div class="card pad tool-body grp-body" data-grp></div></div>`;
+  return mountGroupCenter($('[data-grp]'), cur.id);
 }
 
 // WebGL renderer when the device supports it, canvas 2D version otherwise; both load on demand
@@ -1287,7 +1305,7 @@ phoneQ.addEventListener('change', e => {
 async function route() {
   const prev = cleanup; cleanup = null; await prev?.();
   const [a = '', b, c] = route_();
-  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, settings, evren: solar }[a] || notFound;
+  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, grup: groupCenter, settings, evren: solar }[a] || notFound;
   await fx.transition(async () => {
     document.body.dataset.page = a || 'home';
     resetScrollChrome();
