@@ -71,6 +71,20 @@ export const GROUP_TABS = [
   { id: 'quiz',         icon: 'star',    title: 'Alıştırma & Quiz' },
 ];
 
+// Chapters follow Ramond, Group Theory: A Physicist's Survey. Tabs of other modules (TABS exports) join by chapter id.
+export const CHAPTERS = [
+  { id: 'sonlu', title: 'Sonlu Gruplar' }, { id: 'temsil', title: 'Temsiller' }, { id: 'basitlik', title: 'Basitliğe Yol' },
+  { id: 'su2', title: 'SU(2)' }, { id: 'su3', title: 'SU(3)' }, { id: 'lie', title: 'Lie Cebirleri' }, { id: 'otesi', title: 'Lie Ötesi' },
+  { id: 'fizik', title: 'Fizik Uygulamaları' }, { id: 'uzayzaman', title: 'Uzay-Zaman & SM' }, { id: 'ozel', title: 'Özel Yapılar' },
+];
+const TAB_MODULES = ['./grouprep-tabs.js', './lie-tabs.js', './phys-tabs.js'];
+// All tabs of the center: the built-in finite-group tabs plus every loaded module's TABS (a missing module is skipped).
+export async function allTabs() {
+  const mods = await Promise.all(TAB_MODULES.map(p => import(p).catch(err => { console.warn('Grup modülü yüklenemedi', p, err); return null; })));
+  const extra = mods.flatMap(m => (m?.TABS || []).filter(t => t && t.id && t.mount && !TAB_MOUNTS[t.id]));
+  return [...GROUP_TABS.map(t => ({ ...t, chapter: 'sonlu', usesGroup: true })), ...extra];
+}
+
 const GROUP_STORE_KEY = 'mp.group';
 const QUIZ_STORE_KEY = 'mp.groupQuiz';
 
@@ -760,8 +774,10 @@ function mountCayley(host, G, ctx) {
           c.fillStyle = subSet?.has(g) ? acc : '#d4d4d8';
           c.font = `500 ${Math.min(11, Math.max(8, cell - 7))}px monospace`;
           const lbl = G.elements[g].length > 5 ? G.elements[g].slice(0, 5) : G.elements[g];
-          c.fillText(lbl, x + cell / 2, head / 2);
           c.fillText(lbl, head / 2, y + cell / 2);
+          // column labels run vertically so neighbouring labels never overlap in narrow cells
+          c.save(); c.translate(x + cell / 2, head - 5); c.rotate(-Math.PI / 2); c.textAlign = 'left';
+          c.fillText(lbl, 0, 0); c.restore();
         }
       }
 
@@ -3383,8 +3399,9 @@ const TAB_MOUNTS = {
   quiz: mountQuiz,
 };
 
-export function mountGroupCenter(el, tabId) {
-  const activeTab = TAB_MOUNTS[tabId] ? tabId : 'kesif';
+export function mountGroupCenter(el, tabId, tabs = []) {
+  const ext = tabs.find(t => t.id === tabId && !TAB_MOUNTS[t.id]);
+  const activeTab = ext ? tabId : TAB_MOUNTS[tabId] ? tabId : 'kesif';
   let curSpec = loadSavedSpec();
   let tabClean = createCleanup();
 
@@ -3436,9 +3453,11 @@ export function mountGroupCenter(el, tabId) {
       G = getGroupFromSpec(curSpec);
     }
 
-    renderPicker(pickerHost, curSpec, G, nextSpec => ctx.setGroup(nextSpec));
+    pickerHost.hidden = !!ext && ext.usesGroup === false; // Lie / physics tabs do not work on the picked finite group
+    if (!pickerHost.hidden) renderPicker(pickerHost, curSpec, G, nextSpec => ctx.setGroup(nextSpec));
     tabHost.innerHTML = '';
-    TAB_MOUNTS[activeTab](tabHost, G, ctx);
+    if (ext) { try { tabClean.add(ext.mount(tabHost, G, ctx)); } catch (err) { console.error(err); tabHost.innerHTML = `<p class="mute">Bu sekme açılamadı: ${esc(err.message || String(err))}</p>`; } }
+    else TAB_MOUNTS[activeTab](tabHost, G, ctx);
     syncSegments(el, true);
   }
 

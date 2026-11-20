@@ -1028,3 +1028,13 @@ html[data-motion="off"] :is(.grp-entry, .grp-chip, .grp-el, .grp-qopt, .grp-tile
   transition: none !important;
   animation: none !important;
 }
+
+/* chapter row (Ramond's chapters) above the tab row */
+.tabs.grp-chapters { margin-bottom: 8px; }
+.tabs.grp-chapters .tab { height: 32px; padding: 0 12px; font-size: 12.5px; font-weight: 600; letter-spacing: .01em; }
+.tabs.grp-chapters .tab.on { background: color-mix(in srgb, var(--acc) 22%, transparent); border-color: color-mix(in srgb, var(--acc) 55%, transparent); color: var(--fg); }
+
+/* the page body is a grid without explicit columns: its auto column grew to the Cayley canvas width and pushed
+   the toolbar and zoom buttons off-screen. minmax(0,1fr) keeps wide content inside its own scroll box. */
+.tool-body.grp-body { grid-template-columns: minmax(0, 1fr); }
+.grp-body [data-tab-host], .grp-body [data-board] { min-width: 0; }

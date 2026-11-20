@@ -646,13 +646,17 @@ async function sim(id) {
 
 // Group Theory Study Center (#/grup): loaded on demand like sim
 async function groupCenter(tab) {
-  const { GROUP_TABS, mountGroupCenter } = await import('./groupcenter.js');
-  const cur = GROUP_TABS.find(x => x.id === tab) || GROUP_TABS[0];
-  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Grup Teorisi Merkezi</p><h1>${esc(cur.title)}</h1></div></header>
-    <div class="tabs">${GROUP_TABS.map(x => `<a href="#/grup/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
+  const { CHAPTERS, allTabs, mountGroupCenter } = await import('./groupcenter.js');
+  const tabs = await allTabs();
+  const cur = tabs.find(x => x.id === tab) || tabs[0];
+  const chapters = CHAPTERS.filter(ch => tabs.some(t => t.chapter === ch.id));
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Grup Teorisi Merkezi · ${esc(CHAPTERS.find(c => c.id === cur.chapter)?.title || '')}</p><h1>${esc(cur.title)}</h1></div></header>
+    <nav class="tabs grp-chapters" aria-label="Bölümler">${chapters.map(ch => `<a href="#/grup/${tabs.find(t => t.chapter === ch.id).id}" class="tab ${ch.id === cur.chapter ? 'on' : ''}">${esc(ch.title)}</a>`).join('')}</nav>
+    <div class="tabs">${tabs.filter(x => x.chapter === cur.chapter).map(x => `<a href="#/grup/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon in ICONS_OK ? x.icon : 'sparkle')}<span>${esc(x.title)}</span></a>`).join('')}</div>
     <div class="card pad tool-body grp-body" data-grp></div></div>`;
-  return mountGroupCenter($('[data-grp]'), cur.id);
+  return mountGroupCenter($('[data-grp]'), cur.id, tabs);
 }
+const ICONS_OK = Object.fromEntries('home book review tool settings plus pen marker eraser select line arrow rect ellipse text image undo redo trash download upload fit calc back check play pause clock sigma x dots search flame chart grid wave resistor matrix phasor edit side star install sparkle rotate atom'.split(' ').map(k => [k, 1]));
 
 // WebGL renderer when the device supports it, canvas 2D version otherwise; both load on demand
 async function mountSolarAny(host, opts) {
