@@ -10,7 +10,7 @@ const accent = () => getComputedStyle(document.documentElement).getPropertyValue
 // Pause decorative loops when the window is hidden or not focused (saves CPU/GPU and battery).
 // Also rest after 12 s without input, except on the solar system page where people just watch.
 let idle = false, idleT = 0;
-export const asleep = () => document.hidden || !document.hasFocus() || (idle && document.body?.dataset.page !== 'evren');
+export const asleep = () => document.hidden || !document.hasFocus() || (idle && !['evren', 'karadelik'].includes(document.body?.dataset.page));
 const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 12000); if (idle) { idle = false; syncVis(); } };
 for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
 addEventListener('hashchange', wake);

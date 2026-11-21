@@ -15,10 +15,11 @@ export const FIELDS = [
   { id: 'endustri', title: 'Endüstri & Yöneylem' },
   { id: 'biyomed', title: 'Biyomedikal' },
   { id: 'fizikmat', title: 'Fizik & Matematik' },
+  { id: 'karadelik', title: 'Kara Delikler' },
   { id: 'simetri', title: 'Simetri & Grup Teorisi' },
 ];
 
-const MODULES = ['./simlab-eee.js', './simlab-mech.js', './simlab-civil.js', './simlab-comp.js'];
+const MODULES = ['./simlab-eee.js', './simlab-mech.js', './simlab-civil.js', './simlab-comp.js', './bh-sims.js'];
 
 // Group Theory Center tabs that are simulations rather than tables/lessons; they keep living there too.
 const GROUP_SIMS = ['simetri', 'permutasyon', 'graf', 'su2-lab', 'su3-lab', 'kok-sistemi', 'weyl-grubu', 'harmonik-su3', 'bohr-so4', 'hilbert-fermi', 'lorentz-poincare', 'konformal-grup', 'aile-simetrileri', 'simetri-galerisi'];

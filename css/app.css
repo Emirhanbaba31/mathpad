@@ -2927,3 +2927,20 @@ html.tab-hidden *, html.tab-hidden *::before, html.tab-hidden *::after { animati
 .pb-top { background: rgba(0, 0, 0, .86); }
 /* desktop: the tab row has no visible scrollbar and a mouse wheel only scrolls vertically, so wrap instead of scrolling */
 @media (min-width: 821px) { .tabs { flex-wrap: wrap; overflow: visible; } }
+
+/* Nova's black-hole act: a pocket black hole pulls her in, she stretches like spaghetti, then springs back */
+.astro.act-spaghetti { transform-box: fill-box; transform-origin: 50% 56%; animation: nova-spaghetti 3.6s cubic-bezier(.45, 0, .3, 1) 1; }
+@keyframes nova-spaghetti {
+  0% { transform: none; }
+  20% { transform: scale(.9, 1.1) skewX(-4deg); }
+  44% { transform: scale(.46, 1.85) skewX(-10deg); }
+  58% { transform: scale(.3, 2.35) skewX(9deg); }
+  72% { transform: scale(1.2, .8); }
+  84% { transform: scale(.94, 1.06); }
+  100% { transform: none; }
+}
+.astro.act-spaghetti .a-m-smile, .astro.act-spaghetti .a-eyes-norm { opacity: 0; }
+.astro.act-spaghetti .a-m-o, .astro.act-spaghetti .a-eyes-sleep { opacity: 1; }
+.nova-fx .nfx-hole-disk { fill: none; stroke: #ffb066; stroke-width: 2.2; opacity: .85; filter: drop-shadow(0 0 2px #ff8a2a); }
+.nova-fx .nfx-hole-core { fill: #000; stroke: rgba(255, 226, 180, .95); stroke-width: .8; }
+.nova-fx .nfx-hole-front { fill: none; stroke: #ffd7a0; stroke-width: 2.2; }

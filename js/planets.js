@@ -23,6 +23,7 @@ export const PLANET_THEMES = [
   { id: 'uranus',  name: 'Uranüs', accent: '#7ceef7', tagline: 'Eğik yörüngede berrak buz sessizliği' },
   { id: 'neptune', name: 'Neptün', accent: '#6da4ff', tagline: 'Derin mavi rüzgârlarla sınırları aş' },
   { id: 'sun',     name: 'Güneş',  accent: '#ffb84d', tagline: 'Çekirdekten taşan saf enerji' },
+  { id: 'karadelik', name: 'Kara Delik', accent: '#ffa04a', tagline: 'Olay ufkunun kıyısında derin odak' },
 ];
 
 const THEME_MAP = new Map(PLANET_THEMES.map(t => [t.id, t]));
@@ -40,6 +41,7 @@ const WAVE_ORIGIN = {
   uranus:  ['14%', '88%'],
   neptune: ['88%', '14%'],
   sun:     ['76%', '98%'],
+  karadelik: ['80%', '74%'],
 };
 
 const getTheme = id => THEME_MAP.get(id) || THEME_MAP.get(DEFAULT_PLANET);
@@ -151,6 +153,12 @@ function ambientMarkup(id) {
       );
       return `${streaks}${flecks}`;
     }
+    case 'karadelik': {
+      // Gas sparks spiralling into the disk (each one orbits inwards and fades; transform/opacity only)
+      return buildParticles(977, 14, 'pl-p pl-bh-spark', (i, r) =>
+        `--a0:${(r() * 360).toFixed(0)}deg;--r0:${(30 + r() * 16).toFixed(1)}vmin;--s:${(1.6 + r() * 2.2).toFixed(1)}px;--d:${(7 + r() * 7).toFixed(1)}s;--dl:${(-r() * 12).toFixed(1)}s;--op:${(.35 + r() * .45).toFixed(2)}`
+      );
+    }
     case 'sun': {
       // Rising solar embers & glowing sparks drifting up from the fiery lower limb (22 elements)
       return buildParticles(901, 22, 'pl-p pl-ember', (i, r) =>
@@ -220,6 +228,17 @@ function planetBodyMarkup(id) {
           <i class="pl-jbolt jb3"></i>
           <i class="pl-rim"></i>
         </div>
+      </div>`;
+  }
+  if (id === 'karadelik') {
+    // Back disk, lensed far side arching over the shadow, shadow with photon ring, near disk in front
+    return `
+      <div class="pl-planet-wrap pl-bh">
+        <div class="pl-bh-glow"></div>
+        <div class="pl-bh-disk pl-bh-back"><i></i></div>
+        <div class="pl-bh-lens"></div>
+        <div class="pl-bh-shadow"></div>
+        <div class="pl-bh-disk pl-bh-front"><i></i></div>
       </div>`;
   }
   if (id === 'sun') {

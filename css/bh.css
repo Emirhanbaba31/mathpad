@@ -1,0 +1,2164 @@
+/* MathPad Kara Delik Bölümü — Gözlemevi stilleri (Part 2 of 4).
+   Kural: Tüm seçiciler .bh- ön ekiyle başlar; Part 4 bu dosyanın sonuna kendi stillerini ekleyecektir. */
+
+/* =====================================================================
+   Gözlemevi Ana Yerleşimi
+   ===================================================================== */
+
+.bh-obs {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bh-obs-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bh-obs-preset-lbl {
+  font-size: 11.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-right: 2px;
+}
+
+.bh-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+  font: 500 13px var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-med), transform var(--t-med) var(--ease-spring);
+}
+
+.bh-preset-btn:hover {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line-2));
+}
+
+.bh-preset-btn:active {
+  transform: scale(.96);
+}
+
+.bh-preset-btn.bh-on {
+  background: color-mix(in srgb, var(--acc) 20%, rgba(0, 0, 0, .55));
+  border-color: var(--acc);
+  color: #fff;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--acc) 28%, transparent);
+}
+
+.bh-preset-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dim);
+  flex: none;
+}
+
+.bh-preset-btn.bh-on .bh-preset-dot {
+  background: var(--acc);
+  box-shadow: 0 0 8px var(--acc);
+}
+
+.bh-obs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(290px, 360px);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.bh-obs-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* =====================================================================
+   Ray-Traced Gözlemevi Sahnesi ve HUD
+   ===================================================================== */
+
+.bh-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  min-height: 320px;
+  max-height: 72vh;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--acc) 28%, var(--line-2));
+  background: #000;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  cursor: grab;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .55);
+}
+
+.bh-stage.bh-dragging {
+  cursor: grabbing;
+}
+
+.bh-gl-canvas,
+.bh-overlay-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bh-overlay-canvas {
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bh-hud-top {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  flex-wrap: wrap;
+}
+
+.bh-hud-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  max-width: calc(100% - 132px);
+}
+
+.bh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(6, 7, 11, .76);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(244, 244, 245, .92);
+  font: 500 11.5px var(--mono);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bh-badge.bh-badge-exact {
+  border-color: rgba(91, 228, 155, .5);
+  color: #8df2bd;
+}
+
+.bh-badge.bh-badge-approx {
+  border-color: rgba(255, 209, 102, .55);
+  color: #ffd97d;
+}
+
+.bh-badge-mark {
+  font-weight: 700;
+}
+
+.bh-hud-acts {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  background: rgba(6, 7, 11, .76);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.bh-hud-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: rgba(244, 244, 245, .86);
+  font: 600 15px var(--mono);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+}
+
+.bh-hud-btn:hover {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+}
+
+.bh-hud-btn:active {
+  transform: scale(.92);
+}
+
+.bh-hud-btn .i {
+  width: 16px;
+  height: 16px;
+}
+
+.bh-hint {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 4;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  background: rgba(6, 7, 11, .72);
+  color: rgba(244, 244, 245, .74);
+  font-size: 11.5px;
+  pointer-events: none;
+  transition: opacity .35s var(--ease-out);
+}
+
+.bh-hint.bh-hidden {
+  opacity: 0;
+}
+
+/* =====================================================================
+   Gemiyle Yaklaş Sinematik Paneli
+   ===================================================================== */
+
+.bh-ship-hud {
+  display: grid;
+  gap: 8px;
+  padding: 11px 13px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--acc) 55%, var(--line-2));
+  background: color-mix(in srgb, var(--acc) 7%, rgba(6, 8, 14, .88));
+  color: var(--fg);
+  min-width: 0;
+  animation: bh-fade-in .28s var(--ease-out) both;
+}
+
+.bh-ship-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bh-ship-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--acc);
+}
+
+.bh-ship-clocks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bh-ship-clock {
+  padding: 6px 9px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  background: rgba(255, 255, 255, .04);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bh-ship-clock-lbl {
+  font-size: 10.5px;
+  color: rgba(244, 244, 245, .64);
+}
+
+.bh-ship-clock-val {
+  font: 600 13.5px var(--mono);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bh-ship-note {
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid rgba(110, 198, 255, .45);
+  background: rgba(56, 152, 255, .14);
+  color: #cfeaff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.bh-fallback-banner {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  padding: 10px 13px;
+  border-radius: 11px;
+  border: 1px dashed rgba(255, 209, 102, .55);
+  background: rgba(14, 12, 8, .88);
+  color: #ffe299;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* =====================================================================
+   Sahne Altı Eylem ve Kalite Çubuğu
+   ===================================================================== */
+
+.bh-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+}
+
+.bh-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bh-ship-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--acc) 70%, transparent);
+  background: color-mix(in srgb, var(--acc) 18%, rgba(0, 0, 0, .4));
+  color: #fff;
+  font: 600 13.5px var(--font);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), box-shadow var(--t-med), transform var(--t-fast);
+}
+
+.bh-ship-btn:hover {
+  background: color-mix(in srgb, var(--acc) 28%, rgba(0, 0, 0, .45));
+  border-color: var(--acc);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--acc) 30%, transparent);
+}
+
+.bh-ship-btn:active {
+  transform: scale(.97);
+}
+
+.bh-ship-btn.bh-active {
+  background: var(--acc);
+  color: #000;
+  border-color: var(--acc);
+}
+
+.bh-ship-btn .i {
+  width: 16px;
+  height: 16px;
+}
+
+.bh-anim-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+  font: 500 13px var(--font);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+
+.bh-anim-btn:hover {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line-2));
+}
+
+.bh-anim-btn:active {
+  transform: scale(.97);
+}
+
+.bh-anim-btn .i {
+  width: 15px;
+  height: 15px;
+}
+
+.bh-quality-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.bh-quality-lbl {
+  font-size: 11.5px;
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.bh-quality-seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+}
+
+.bh-q-btn {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--mute);
+  font: 500 12.5px var(--font);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.bh-q-btn:hover {
+  color: var(--fg);
+}
+
+.bh-q-btn.bh-on {
+  background: var(--fg);
+  color: #000;
+  font-weight: 600;
+}
+
+/* =====================================================================
+   Canlı Fizik Okumaları (Readouts)
+   ===================================================================== */
+
+.bh-readouts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bh-readout {
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bh-readout.bh-readout-acc {
+  border-color: color-mix(in srgb, var(--acc) 45%, var(--line));
+  background: color-mix(in srgb, var(--acc) 8%, rgba(0, 0, 0, .42));
+}
+
+.bh-readout-lbl {
+  font-size: 11px;
+  color: var(--mute);
+  line-height: 1.3;
+}
+
+.bh-readout-val {
+  font: 600 14.5px var(--mono);
+  color: var(--fg);
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.bh-readout-sub {
+  font-size: 11px;
+  color: var(--dim);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* =====================================================================
+   Kontrol Paneli (Kaydırıcılar ve Anahtarlar)
+   ===================================================================== */
+
+.bh-controls {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bh-panel {
+  padding: 14px 15px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bh-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bh-panel-title {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+}
+
+.bh-sliders {
+  display: grid;
+  gap: 11px;
+}
+
+.bh-slider-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bh-slider-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bh-slider-lbl {
+  font-size: 12.5px;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.bh-slider-val {
+  font: 600 12.5px var(--mono);
+  color: var(--acc);
+  white-space: nowrap;
+}
+
+.bh-range {
+  width: 100%;
+  min-height: 30px;
+  accent-color: var(--acc);
+  cursor: pointer;
+  margin: 0;
+}
+
+.bh-slider-note {
+  font-size: 11px;
+  color: var(--mute);
+  line-height: 1.35;
+}
+
+.bh-slider-note.bh-warn-note {
+  color: #ffd97d;
+}
+
+.bh-toggles {
+  display: grid;
+  gap: 6px;
+}
+
+.bh-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .32);
+  color: var(--fg);
+  font: 500 13px var(--font);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.bh-toggle:hover {
+  border-color: var(--line-2);
+  background: var(--hover);
+}
+
+.bh-toggle.bh-on {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line));
+  background: color-mix(in srgb, var(--acc) 10%, rgba(0, 0, 0, .4));
+}
+
+.bh-toggle-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  font: 600 11px var(--mono);
+  color: var(--mute);
+  flex: none;
+}
+
+.bh-toggle.bh-on .bh-toggle-state {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 22%, transparent);
+  color: #fff;
+}
+
+.bh-info-note {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .3);
+  font-size: 12px;
+  color: var(--mute);
+  line-height: 1.5;
+}
+
+.bh-info-note b {
+  color: var(--fg);
+}
+
+/* =====================================================================
+   Kağıt Teması ve Hareket Erişilebilirliği
+   ===================================================================== */
+
+html[data-theme="paper"] .bh-stage {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+@keyframes bh-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+html[data-motion="reduced"] .bh-ship-hud,
+html[data-motion="reduced"] .bh-preset-btn,
+html[data-motion="reduced"] .bh-ship-btn,
+html[data-motion="reduced"] .bh-anim-btn,
+html[data-motion="reduced"] .bh-hud-btn,
+html[data-motion="reduced"] .bh-toggle {
+  animation: none !important;
+  transform: none !important;
+  transition: opacity 140ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease !important;
+}
+
+html[data-motion="off"] .bh-ship-hud,
+html[data-motion="off"] .bh-preset-btn,
+html[data-motion="off"] .bh-ship-btn,
+html[data-motion="off"] .bh-anim-btn,
+html[data-motion="off"] .bh-hud-btn,
+html[data-motion="off"] .bh-toggle,
+html[data-motion="off"] .bh-hint {
+  animation: none !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* =====================================================================
+   Duyarlı Yerleşim (Tablet & 360–430 px Telefonlar)
+   ===================================================================== */
+
+@media (max-width: 1280px) {
+  /* the ray-traced image is the point of the view: give it the full width, controls go below */
+  .bh-obs-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 980px) {
+  .bh-readouts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .bh-stage {
+    aspect-ratio: 4 / 3;
+    min-height: 270px;
+    max-height: 58vh;
+  }
+  .bh-preset-btn,
+  .bh-ship-btn,
+  .bh-anim-btn,
+  .bh-toggle,
+  .bh-q-btn,
+  .bh-range {
+    min-height: 44px;
+  }
+  .bh-hud-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .bh-hud-badges {
+    max-width: calc(100% - 152px);
+  }
+  .bh-ship-clocks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 430px) {
+  .bh-readouts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bh-action-bar {
+    padding: 10px;
+  }
+  .bh-action-group,
+  .bh-quality-wrap {
+    width: 100%;
+  }
+  .bh-quality-seg {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .bh-q-btn {
+    padding: 0 4px;
+    font-size: 12px;
+  }
+  .bh-hud-top {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  .bh-badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+  }
+  .bh-hint {
+    display: none;
+  }
+}
+
+/* --- Part 2 sonu (Part 4 bu satırdan sonra devam edebilir) --- */
+
+/* =====================================================================
+   Part 4: Kara Delik Merkezi (Simülasyonlar, Hesaplayıcı, Konu, Alıştırma, Katalog)
+   Kural: Her seçici .bh- ön ekini taşır.
+   ===================================================================== */
+
+.bh-center-wrap {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.bh-center-wrap > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bh-section-h {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.bh-section-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.5;
+  max-width: 74ch;
+}
+
+.bh-count-pill,
+.bh-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .04);
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.bh-pill.bh-pill-acc,
+.bh-count-pill {
+  border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+}
+
+.bh-err-box {
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(255, 107, 107, .5);
+  background: rgba(255, 107, 107, .1);
+  color: #fecdd3;
+  font-size: 13.5px;
+}
+
+/* =====================================================================
+   Sekme 2: Simülasyonlar Galerisi ve Satır İçi Sahne
+   ===================================================================== */
+
+.bh-sim-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bh-sim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.bh-sim-card {
+  display: grid;
+  gap: 9px;
+  align-content: start;
+  padding: 15px 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: linear-gradient(150deg, rgba(255, 255, 255, .035), rgba(0, 0, 0, .42));
+  color: var(--fg);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  min-width: 0;
+  transition: border-color var(--t-fast), transform var(--t-med) var(--ease-out), box-shadow var(--t-med), background var(--t-fast);
+}
+
+.bh-sim-card:hover {
+  border-color: color-mix(in srgb, var(--acc) 70%, var(--line-2));
+  background: linear-gradient(150deg, color-mix(in srgb, var(--acc) 10%, rgba(255, 255, 255, .04)), rgba(0, 0, 0, .46));
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--acc) 14%, rgba(0, 0, 0, .5));
+}
+
+.bh-sim-card:active {
+  transform: scale(.98);
+}
+
+.bh-sim-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.bh-sim-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line-2));
+  background: color-mix(in srgb, var(--acc) 12%, rgba(0, 0, 0, .45));
+  color: var(--acc);
+  flex: none;
+}
+
+.bh-sim-ic.bh-sim-ic-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.bh-sim-idx {
+  font: 600 11.5px var(--mono);
+  color: var(--dim);
+}
+
+.bh-sim-card-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.bh-sim-card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--mute);
+  line-height: 1.5;
+}
+
+.bh-sim-card-go {
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--acc);
+}
+
+.bh-sim-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bh-sim-active-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bh-sim-active-title {
+  font-size: 15.5px;
+  color: var(--fg);
+}
+
+.bh-sim-switcher {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.bh-sim-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+.bh-sim-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  color: var(--mute);
+  font: 500 12.5px var(--font);
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+
+.bh-sim-pill:hover {
+  color: var(--fg);
+  border-color: var(--line-2);
+}
+
+.bh-sim-pill.bh-on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 18%, rgba(0, 0, 0, .5));
+  color: #fff;
+}
+
+.bh-sim-pill .i {
+  width: 14px;
+  height: 14px;
+}
+
+.bh-sim-stage {
+  min-width: 0;
+  width: 100%;
+}
+
+/* =====================================================================
+   Sekme 3: Hesaplayıcı
+   ===================================================================== */
+
+.bh-calc-head-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bh-calc-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.bh-calc-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.bh-field {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+}
+
+.bh-field-lbl {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.bh-field-hint {
+  font-size: 11.5px;
+  color: var(--mute);
+  line-height: 1.4;
+}
+
+.bh-input-pair {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bh-inp-grow {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.bh-unit-sel {
+  width: auto;
+  min-width: 84px;
+  flex: none;
+}
+
+.bh-rad-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bh-mini-chip {
+  min-height: 28px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .03);
+  color: var(--mute);
+  font: 500 11.5px var(--mono);
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
+}
+
+.bh-mini-chip:hover {
+  border-color: var(--acc);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+}
+
+.bh-calc-results {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.bh-calc-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bh-calc-sec {
+  min-width: 0;
+}
+
+.bh-tbl-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+}
+
+.bh-calc-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 520px;
+}
+
+.bh-calc-tbl th,
+.bh-calc-tbl td {
+  padding: 9px 11px;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  text-align: left;
+  vertical-align: top;
+}
+
+.bh-calc-tbl thead th {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  background: rgba(255, 255, 255, .04);
+  white-space: nowrap;
+}
+
+.bh-calc-tbl tbody tr:last-child th,
+.bh-calc-tbl tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.bh-calc-tbl tbody tr:hover {
+  background: rgba(255, 255, 255, .03);
+}
+
+.bh-tbl-lbl {
+  font-weight: 500;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.bh-tbl-sym {
+  color: var(--acc);
+  white-space: nowrap;
+  font-size: 12.5px;
+}
+
+.bh-tbl-val {
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.bh-tbl-note {
+  color: var(--mute);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* =====================================================================
+   Sekme 4: Konu Anlatımı
+   ===================================================================== */
+
+.bh-prog-text {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--fg);
+}
+
+.bh-toc-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bh-prog-track {
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .08);
+  overflow: hidden;
+}
+
+.bh-prog-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--acc), #5be49b);
+  transition: width .35s var(--ease-out);
+}
+
+.bh-toc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bh-toc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 11px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .025);
+  color: var(--fg);
+  font: 500 12.5px var(--font);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.bh-toc-chip:hover {
+  border-color: var(--acc);
+  background: var(--hover);
+}
+
+.bh-toc-chip.bh-done {
+  border-color: rgba(91, 228, 155, .5);
+  background: rgba(91, 228, 155, .1);
+  color: #a7f3d0;
+}
+
+.bh-toc-num {
+  font: 700 11.5px var(--mono);
+  color: var(--acc);
+}
+
+.bh-toc-chip.bh-done .bh-toc-num {
+  color: #5be49b;
+}
+
+.bh-lessons-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bh-lesson {
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .02);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.bh-lesson[open] {
+  border-color: color-mix(in srgb, var(--acc) 40%, var(--line-2));
+}
+
+.bh-lesson.bh-done {
+  border-color: rgba(91, 228, 155, .32);
+}
+
+.bh-lesson-sum {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  min-height: 52px;
+  transition: background var(--t-fast);
+}
+
+.bh-lesson-sum::-webkit-details-marker {
+  display: none;
+}
+
+.bh-lesson-sum:hover {
+  background: var(--hover);
+}
+
+.bh-lesson-sum-l {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bh-lesson-num {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font: 700 12px var(--mono);
+  color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--acc) 42%, transparent);
+  flex: none;
+}
+
+.bh-lesson.bh-done .bh-lesson-num {
+  color: #062816;
+  background: #5be49b;
+  border-color: #5be49b;
+}
+
+.bh-lesson-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.35;
+}
+
+.bh-lesson-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.bh-lesson-time {
+  font: 500 12px var(--mono);
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+.bh-done-badge {
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid rgba(91, 228, 155, .5);
+  background: rgba(91, 228, 155, .14);
+  color: #6ee7b7;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bh-lesson-body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 13px;
+  min-width: 0;
+}
+
+.bh-lesson-body .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 4px 0;
+}
+
+.bh-lesson-prose {
+  display: grid;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.72;
+  color: var(--fg);
+}
+
+.bh-lesson-prose p {
+  margin: 0;
+}
+
+.bh-box-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.bh-tag-ex {
+  color: #ffd166;
+}
+
+.bh-tag-sum,
+.bh-tag-sol {
+  color: #5be49b;
+}
+
+.bh-eq-box {
+  display: grid;
+  gap: 10px;
+  padding: 13px 15px;
+  min-width: 0;
+}
+
+.bh-eq-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.bh-eq-lbl {
+  font-size: 12.5px;
+  color: var(--mute);
+}
+
+.bh-eq-tex {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.bh-example-box {
+  padding: 13px 15px;
+  border-radius: 11px;
+  border: 1px dashed color-mix(in srgb, #ffd166 42%, var(--line-2));
+  background: rgba(255, 209, 102, .05);
+  display: grid;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.62;
+  min-width: 0;
+}
+
+.bh-ex-prob {
+  margin: 0;
+  color: var(--fg);
+}
+
+.bh-ex-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--fg);
+}
+
+.bh-ex-res {
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .35);
+  border: 1px solid var(--line);
+  color: var(--fg);
+}
+
+.bh-summary-box {
+  padding: 11px 14px;
+  border-radius: 10px;
+  border-left: 3px solid #5be49b;
+  background: rgba(91, 228, 155, .07);
+  display: grid;
+  gap: 5px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.bh-summary-box p {
+  margin: 0;
+}
+
+.bh-lesson-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.bh-lesson-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bh-btn-done {
+  border-color: rgba(91, 228, 155, .55);
+  background: rgba(91, 228, 155, .14);
+  color: #6ee7b7;
+}
+
+/* =====================================================================
+   Sekme 5: Alıştırmalar
+   ===================================================================== */
+
+.bh-ex-toolbar {
+  padding: 12px 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+}
+
+.bh-ex-filters,
+.bh-ex-bar-acts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bh-ex-topic-sel {
+  width: auto;
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.bh-ex-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.bh-ex-card {
+  gap: 16px;
+}
+
+.bh-ex-head {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bh-ex-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bh-ex-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.bh-ex-story {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--fg);
+}
+
+.bh-ex-parts {
+  display: grid;
+  gap: 14px;
+}
+
+.bh-ex-part {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .34);
+  display: grid;
+  gap: 11px;
+  min-width: 0;
+}
+
+.bh-ex-part.bh-part-ok {
+  border-color: rgba(91, 228, 155, .48);
+}
+
+.bh-ex-part.bh-part-bad {
+  border-color: rgba(255, 107, 107, .48);
+}
+
+.bh-ex-part-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: start;
+}
+
+.bh-part-lbl {
+  font: 700 14px var(--mono);
+  color: var(--acc);
+  padding-top: 2px;
+}
+
+.bh-part-prompt {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--fg);
+  min-width: 0;
+}
+
+.bh-status-pill {
+  padding: 2px 9px;
+  border-radius: 99px;
+  font: 600 11.5px var(--mono);
+  white-space: nowrap;
+}
+
+.bh-status-pill.bh-ok {
+  border: 1px solid rgba(91, 228, 155, .55);
+  background: rgba(91, 228, 155, .14);
+  color: #6ee7b7;
+}
+
+.bh-status-pill.bh-bad {
+  border: 1px solid rgba(255, 107, 107, .55);
+  background: rgba(255, 107, 107, .14);
+  color: #fca5a5;
+}
+
+.bh-ex-part-body {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bh-ans-inp-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  max-width: 440px;
+  width: 100%;
+}
+
+.bh-ans-inp {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.bh-unit-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line-2));
+  background: color-mix(in srgb, var(--acc) 12%, rgba(0, 0, 0, .5));
+  color: var(--acc);
+  font: 600 13px var(--mono);
+  white-space: nowrap;
+  flex: none;
+}
+
+.bh-yn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bh-yn-btn.bh-on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 22%, rgba(0, 0, 0, .45));
+  color: #fff;
+}
+
+.bh-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.bh-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .025);
+  color: var(--fg);
+  font: 400 13.5px var(--font);
+  line-height: 1.48;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.bh-choice-btn:hover {
+  border-color: color-mix(in srgb, var(--acc) 60%, var(--line-2));
+  background: var(--hover);
+}
+
+.bh-choice-btn.bh-sel {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 15%, rgba(0, 0, 0, .45));
+}
+
+.bh-choice-btn.bh-ok {
+  border-color: #5be49b;
+  background: rgba(91, 228, 155, .14);
+}
+
+.bh-choice-btn.bh-bad {
+  border-color: var(--red);
+  background: rgba(255, 107, 107, .14);
+}
+
+.bh-choice-k {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .08);
+  display: grid;
+  place-items: center;
+  font: 700 12px var(--mono);
+  flex: none;
+}
+
+.bh-choice-txt {
+  flex: 1;
+  min-width: 0;
+}
+
+.bh-part-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.bh-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.bh-feedback.bh-ok {
+  border: 1px solid rgba(91, 228, 155, .55);
+  background: rgba(91, 228, 155, .12);
+  color: #a7f3d0;
+}
+
+.bh-feedback.bh-bad {
+  border: 1px solid rgba(255, 107, 107, .55);
+  background: rgba(255, 107, 107, .12);
+  color: #fecdd3;
+}
+
+.bh-fb-mark {
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.bh-hints-box {
+  display: grid;
+  gap: 6px;
+}
+
+.bh-hint-item {
+  padding: 8px 12px;
+  border-radius: 9px;
+  border-left: 3px solid #ffd166;
+  background: rgba(255, 209, 102, .08);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg);
+}
+
+.bh-solution-box {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(91, 228, 155, .38);
+  background: rgba(91, 228, 155, .07);
+  display: grid;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.bh-sol-steps {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.bh-sol-ans {
+  padding-top: 6px;
+  border-top: 1px solid rgba(91, 228, 155, .24);
+  color: #a7f3d0;
+}
+
+.bh-complete-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid rgba(91, 228, 155, .5);
+  background: rgba(91, 228, 155, .1);
+  color: #d1fae5;
+  font-size: 13.5px;
+}
+
+/* =====================================================================
+   Sekme 6: Gerçek Kara Delikler Kataloğu ve Boyut Karşılaştırma Şeridi
+   ===================================================================== */
+
+.bh-scale-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.bh-scale-group {
+  padding: 12px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bh-scale-g-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bh-scale-g-title {
+  font-size: 13.5px;
+  color: var(--fg);
+}
+
+.bh-scale-strip {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 6px 4px 4px;
+  max-width: 100%;
+}
+
+.bh-scale-item {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+  flex: none;
+  min-width: 82px;
+  text-align: center;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.bh-scale-item:hover:not(.bh-scale-ref) {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line-2));
+  background: rgba(255, 255, 255, .04);
+}
+
+.bh-scale-item.bh-scale-ref {
+  cursor: default;
+  border-right: 1px dashed var(--line-2);
+  border-radius: 0;
+  padding-right: 14px;
+}
+
+.bh-scale-orb-box {
+  height: 82px;
+  display: grid;
+  place-items: center;
+}
+
+.bh-scale-orb {
+  display: block;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #1c1d24, #000 68%);
+  border: 1.5px solid var(--acc);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--acc) 35%, transparent);
+}
+
+.bh-scale-orb.bh-orb-stellar {
+  border-color: #60a5fa;
+  box-shadow: 0 0 10px rgba(96, 165, 250, .35);
+}
+
+.bh-scale-orb.bh-orb-intermediate {
+  border-color: #c084fc;
+  box-shadow: 0 0 12px rgba(192, 132, 252, .38);
+}
+
+.bh-scale-orb.bh-orb-supermassive {
+  border-color: #fbbf24;
+  box-shadow: 0 0 16px rgba(251, 191, 36, .42);
+}
+
+.bh-scale-ref-ring {
+  display: block;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(244, 244, 245, .45);
+  background: rgba(255, 255, 255, .04);
+}
+
+.bh-scale-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.bh-scale-val {
+  font-size: 10.5px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+
+.bh-scale-note {
+  font-size: 11.5px;
+  color: var(--dim);
+}
+
+.bh-cat-toolbar {
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+}
+
+.bh-cat-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bh-cat-cnt {
+  font-size: 11px;
+  opacity: .75;
+}
+
+.bh-cat-sort-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--mute);
+}
+
+.bh-cat-sort {
+  width: auto;
+  min-width: 190px;
+}
+
+.bh-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.bh-cat-card {
+  display: grid;
+  gap: 11px;
+  align-content: start;
+  padding: 15px 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(255, 255, 255, .03), rgba(0, 0, 0, .44));
+  min-width: 0;
+  transition: border-color var(--t-fast), box-shadow var(--t-med);
+}
+
+.bh-cat-card:hover {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line-2));
+}
+
+.bh-cat-card.bh-cat-flash {
+  border-color: var(--acc);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--acc) 35%, transparent);
+}
+
+.bh-cat-head {
+  display: grid;
+  gap: 4px;
+}
+
+.bh-cat-badges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bh-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: 1px solid var(--line-2);
+}
+
+.bh-type-badge.bh-type-stellar {
+  border-color: rgba(96, 165, 250, .5);
+  background: rgba(96, 165, 250, .12);
+  color: #93c5fd;
+}
+
+.bh-type-badge.bh-type-intermediate {
+  border-color: rgba(192, 132, 252, .5);
+  background: rgba(192, 132, 252, .12);
+  color: #d8b4fe;
+}
+
+.bh-type-badge.bh-type-supermassive {
+  border-color: rgba(251, 191, 36, .5);
+  background: rgba(251, 191, 36, .12);
+  color: #fde68a;
+}
+
+.bh-cat-name {
+  margin: 2px 0 0;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.bh-cat-const {
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.bh-cat-specs {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .34);
+}
+
+.bh-cat-spec {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bh-cat-spec.bh-cat-spec-wide {
+  grid-column: 1 / -1;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, .06);
+}
+
+.bh-cat-spec dt {
+  font-size: 10.5px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.bh-cat-spec dd {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.bh-cat-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--mute);
+}
+
+.bh-cat-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+/* =====================================================================
+   Part 4: Hareket Erişilebilirliği ve Duyarlı Kırılımlar (360–430 px)
+   ===================================================================== */
+
+html[data-motion="reduced"] .bh-sim-card,
+html[data-motion="reduced"] .bh-cat-card,
+html[data-motion="reduced"] .bh-toc-chip,
+html[data-motion="reduced"] .bh-choice-btn,
+html[data-motion="reduced"] .bh-prog-fill {
+  transition: opacity 140ms ease, background 140ms ease, border-color 140ms ease !important;
+  transform: none !important;
+}
+
+html[data-motion="off"] .bh-sim-card,
+html[data-motion="off"] .bh-cat-card,
+html[data-motion="off"] .bh-toc-chip,
+html[data-motion="off"] .bh-choice-btn,
+html[data-motion="off"] .bh-prog-fill {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+@media (max-width: 980px) {
+  .bh-calc-kpis,
+  .bh-ex-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .bh-calc-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .bh-back-btn,
+  .bh-copy-btn,
+  .bh-obs-jump-btn,
+  .bh-sim-pill,
+  .bh-mini-chip,
+  .bh-toc-chip,
+  .bh-yn-btn,
+  .bh-choice-btn,
+  .bh-ex-topic-sel,
+  .bh-cat-sort,
+  .bh-unit-sel,
+  .bh-inp-grow,
+  .bh-ans-inp {
+    min-height: 44px;
+  }
+  .bh-cat-acts .btn,
+  .bh-lesson-foot .btn,
+  .bh-part-acts .btn {
+    min-height: 44px;
+  }
+  .bh-cat-sort-lbl {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .bh-cat-sort {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .bh-sim-grid,
+  .bh-cat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bh-calc-kpis,
+  .bh-ex-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bh-cat-specs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bh-ex-part-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .bh-lesson-sum {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .bh-lesson-body,
+  .bh-ex-part {
+    padding: 12px;
+  }
+}

@@ -517,7 +517,16 @@ export function mountRoamer(wrap, onOpen) {
     ['peek', 3.6],
     ['boost', 2.4],
     ['book', 3.8],
+    ['spaghetti', 3.6],
   ];
+  // a pocket-sized black hole for the spaghetti act: dark shadow, photon ring and a tilted accretion disk
+  function makeHole() {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'nfx-hole');
+    g.innerHTML = '<ellipse class="nfx-hole-disk" rx="12" ry="3.6"/><circle class="nfx-hole-core" r="4.6"/><path class="nfx-hole-front" d="M -12 0 A 12 3.6 0 0 0 12 0"/>';
+    fxG.append(g);
+    return g;
+  }
 
   let raf = 0, last = performance.now();
   let x = 0, y = 0, px = null, py = null, vxSmooth = 0;
@@ -535,6 +544,7 @@ export function mountRoamer(wrap, onOpen) {
     if (!act) return;
     astroSvg.classList.remove('act-' + act.name);
     nova.classList.remove('behind-ship');
+    act.hole?.remove();
     act = null;
   }
   function clearReact() {
@@ -741,6 +751,26 @@ export function mountRoamer(wrap, onOpen) {
           act.caught = true;
           burstStars(x + nw * .82, y + nh * .42, 6, false);
         }
+      } else if (act.name === 'spaghetti') {
+        // the hole opens ahead of Nova, pulls her in (CSS stretches her like spaghetti) and spits her back out
+        if (!act.hole) {
+          act.hx = clamp(act.sx + nw * .5 + act.dir * 52, left + 14, right + nw - 14);
+          act.hy = clamp(act.sy + nh * .5, 16, Math.max(16, H - 16));
+          act.hole = makeHole();
+        }
+        const pull = p < .58 ? easeInOut(p / .58) : 1 - easeInOut((p - .58) / .42);
+        targetX = act.sx + (act.hx - nw * .5 - act.sx) * pull * .6;
+        targetY = act.sy + (act.hy - nh * .5 - act.sy) * pull * .6;
+        followSpeed = 7;
+        tiltScale = .2;
+        roll = act.dir * pull * 26;
+        if ((act.puffT += dt) > .08 && p > .08 && p < .72) {
+          act.puffT = 0;
+          const a = Math.random() * Math.PI * 2, d = 16 + Math.random() * 10;
+          spawnParticle({ kind: 'spark', x: act.hx + Math.cos(a) * d, y: act.hy + Math.sin(a) * d * .45, vx: -Math.cos(a) * d * 2.4 - Math.sin(a) * 34, vy: (-Math.sin(a) * d * 2.4 + Math.cos(a) * 34) * .45, life: .42, size: .8, acc: Math.random() < .6 });
+        }
+        const open = Math.min(1, Math.sin(Math.min(1, p * 1.08) * Math.PI) * 1.6);
+        act.hole.setAttribute('transform', `translate(${act.hx.toFixed(1)} ${act.hy.toFixed(1)}) rotate(${(-12 * act.dir).toFixed(0)}) scale(${open.toFixed(3)})`);
       } else if (act.name === 'juggle' || act.name === 'wave' || act.name === 'stretch') {
         tiltScale = .25;
       }

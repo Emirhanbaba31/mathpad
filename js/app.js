@@ -348,6 +348,7 @@ function nav() {
     ${link('#/tools', 'tool', 'Araçlar', here === 'tools')}
     ${link('#/sim', 'atom', 'Simülasyon', here === 'sim')}
     ${link('#/grup', 'grid', 'Grup Teorisi', here === 'grup', '', 'nav-desktop-only')}
+    ${link('#/karadelik', 'blackhole', 'Kara Delik', here === 'karadelik', '', 'nav-desktop-only')}
     ${link('#/settings', 'settings', 'Ayarlar', here === 'settings')}
     <div class="nav-foot">${syncPill()}${installEvt ? `<button class="btn ghost" data-act="install">${icon('install')} Uygulamayı yükle</button>` : ''}${update?.state === 'ready' ? `<button class="btn primary upd-btn" data-act="update">${icon('download')} ${esc(update.version)} hazır · Yeniden başlat</button>` : update?.state === 'downloading' ? `<p class="mute small upd-note"><span class="orbit-loader"></span> Güncelleme iniyor (${esc(update.version)})</p>` : ''}</div>`;
   fx.syncNav();
@@ -622,11 +623,17 @@ const groupEntryCard = () => `<a href="#/grup" class="card pad grp-entry" aria-l
   <span class="grp-entry-txt"><b>Grup Teorisi Merkezi</b><span>Cayley tablosu, simetriler, permütasyonlar, alt grup kafesi, homomorfizmalar, teoremler ve quiz</span></span>
   <span class="grp-entry-go">Keşfet →</span></a>`;
 
+const bhEntryCard = () => `<a href="#/karadelik" class="card pad grp-entry bh-entry" aria-label="Kara Delik bölümünü aç">
+  <span class="grp-entry-ic" aria-hidden="true">${icon('blackhole')}</span>
+  <span class="grp-entry-txt"><b>Kara Delik</b><span>Işın izlemeli gözlemevi, göreli yörüngeler, kütleçekim dalgaları, Hawking ışıması, hesaplayıcı ve alıştırmalar</span></span>
+  <span class="grp-entry-go">Keşfet →</span></a>`;
+
 const TOOLS = [['calc', 'calc', 'Hesap makinesi'], ['plot', 'wave', 'Grafik & Bode'], ['matrix', 'matrix', 'Matris / Denklem'], ['phasor', 'phasor', 'Fazör'], ['resistor', 'resistor', 'Direnç renk kodu'], ['formulas', 'sigma', 'Formül kağıdı']];
 function tools(tab = 'calc', cid) {
   if (!TOOLS.some(t => t[0] === tab)) tab = 'calc';
   view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Araçlar</p><h1>${TOOLS.find(t => t[0] === tab)[2]}</h1></div></header>
     ${groupEntryCard()}
+    ${bhEntryCard()}
     <div class="tabs">${TOOLS.map(([k, ic, l]) => `<a href="#/tools/${k}" class="tab ${k === tab ? 'on' : ''}">${icon(ic)}<span>${l}</span></a>`).join('')}</div>
     <div class="card pad tool-body" data-tool></div></div>`;
   const el = $('[data-tool]');
@@ -658,7 +665,25 @@ async function groupCenter(tab) {
     <div class="card pad tool-body grp-body" data-grp></div></div>`;
   return mountGroupCenter($('[data-grp]'), cur.id, tabs);
 }
-const ICONS_OK = Object.fromEntries('home book review tool settings plus pen marker eraser select line arrow rect ellipse text image undo redo trash download upload fit calc back check play pause clock sigma x dots search flame chart grid wave resistor matrix phasor edit side star install sparkle rotate atom'.split(' ').map(k => [k, 1]));
+const ICONS_OK = Object.fromEntries('blackhole home book review tool settings plus pen marker eraser select line arrow rect ellipse text image undo redo trash download upload fit calc back check play pause clock sigma x dots search flame chart grid wave resistor matrix phasor edit side star install sparkle rotate atom'.split(' ').map(k => [k, 1]));
+
+// Black hole section (#/karadelik/<tab>?params): observatory, simulations, calculator, lessons, exercises, catalog
+async function blackHole(tab = '') {
+  const [id, query = ''] = String(tab).split('?');
+  let mod;
+  try { mod = await import('./bh-center.js'); }
+  catch (err) { console.warn('Kara Delik bölümü yüklenemedi', err); view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Kara Delik</p><h1>Yüklenemedi</h1></div></header><p class="mute">Bu bölüm şu an açılamadı.</p></div>`; return; }
+  const { BH_TABS, mountBlackHole } = mod;
+  const cur = BH_TABS.find(t => t.id === id) || BH_TABS[0];
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Kara Delik</p><h1>${esc(cur.title)}</h1></div></header>
+    <div class="tabs">${BH_TABS.map(x => `<a href="#/karadelik/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon in ICONS_OK ? x.icon : 'sparkle')}<span>${esc(x.title)}</span></a>`).join('')}</div>
+    <div class="card pad tool-body grp-body bh-body" data-bh></div></div>`;
+  const ctx = {
+    params: Object.fromEntries(new URLSearchParams(query)),
+    go: (to, p) => { location.hash = `#/karadelik/${to}` + (p && Object.keys(p).length ? '?' + new URLSearchParams(p) : ''); },
+  };
+  return mountBlackHole($('[data-bh]'), cur.id, ctx);
+}
 
 // WebGL renderer when the device supports it, canvas 2D version otherwise; both load on demand
 async function mountSolarAny(host, opts) {
@@ -1311,7 +1336,7 @@ phoneQ.addEventListener('change', e => {
 async function route() {
   const prev = cleanup; cleanup = null; await prev?.();
   const [a = '', b, c] = route_();
-  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, grup: groupCenter, settings, evren: solar }[a] || notFound;
+  const fn = { '': home, c: course, courses, p: problem, review, tools, sim, grup: groupCenter, karadelik: blackHole, settings, evren: solar }[a] || notFound;
   await fx.transition(async () => {
     document.body.dataset.page = a || 'home';
     resetScrollChrome();
