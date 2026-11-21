@@ -2932,3 +2932,6 @@ html.tab-hidden *, html.tab-hidden *::before, html.tab-hidden *::after { animati
    full-screen twinkle layer changes opacity in 12 steps per cycle instead of every frame. */
 #space .neb { animation: none !important; }
 #space .tw { animation-timing-function: steps(12) !important; }
+/* power: indicators that only matter while visible don't spin while hidden (they used to force frames all the time) */
+#toast:not(.show)::before { animation: none; }
+body:not(.pomo-running) .pomo-comet { animation-name: none; }

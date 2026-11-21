@@ -30,6 +30,30 @@ document.addEventListener('visibilitychange', syncVis);
 addEventListener('blur', syncVis); addEventListener('focus', syncVis);
 syncVis(); wake();
 
+// Power while in use: every endless decorative loop anywhere on screen makes the GPU recomposite a screen-sized
+// region every frame (measured ~14% GPU with them, ~3% with only the planet turning). Endless loops are cancelled as
+// they start, so their element shows its static CSS look; one-shot animations (page entries, presses, reactions)
+// are untouched. Kept: loops that carry meaning or are the point of the view (Nova, loaders, timers, sync, the
+// travel ship, the planet rotation, simulations and the group center). Nova keeps swimming (cheap JS) and plays its
+// acts and reactions in full; only its continuous idle limb loops (SVG part animations, repainted every frame: ~5%
+// GPU and ~6% CPU measured) stay still between acts.
+const KEEP_LOOPS = '.astro[class*="act-"], .astro[class*="react-"], .astro.talking, .astro.mood-sleep, .nova-ship.boost, .nova-ship.dock-near, .tether-pulse, .orbit-loader, #toast, .dots, .pomo-comet, .thumb, .pl-tex, .pl-clouds, .pl-night, .pl-moon-tex, body.pomo-running .pomo-body, #pomo-pill, .sync-pill, .ship, [data-sim], [data-grp], .busy';
+const dropLoop = a => {
+  const t = a.effect?.target;
+  if (a.animationName && t instanceof Element && a.effect.getTiming().iterations === Infinity && !t.closest(KEEP_LOOPS)) a.cancel();
+};
+document.addEventListener('animationstart', e => {
+  if (!(e.target instanceof Element)) return;
+  for (const a of e.target.getAnimations({ subtree: true }))
+    if (a.effect?.target === e.target && a.animationName === e.animationName && (a.effect.pseudoElement || '') === (e.pseudoElement || '')) dropLoop(a);
+}, true);
+// loops created while the window was paused never fire animationstart: sweep once on wake and after navigation
+const sweepLoops = () => { for (const a of document.getAnimations()) dropLoop(a); };
+addEventListener('mp-vis', () => { if (!resting()) sweepLoops(); });
+addEventListener('focus', () => setTimeout(sweepLoops, 50));
+addEventListener('hashchange', () => setTimeout(sweepLoops, 400));
+setTimeout(sweepLoops, 400);
+
 // Global particle budget across all active FX layers (smooth on mid-range Android).
 const MAX_PARTICLES = 40;
 let aliveParticles = 0;
