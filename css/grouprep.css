@@ -1,0 +1,567 @@
+/* MathPad Finite Group Representation Theory & Advanced Finite Groups styles — all custom classes prefixed .grep- */
+
+/* ---------- Extended quick-group bar ---------- */
+.grep-ext-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .02);
+}
+.grep-ext-lbl {
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-right: 4px;
+}
+
+/* ---------- Character table & orthogonality ---------- */
+.grep-ctbl-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .44);
+}
+.grep-ctbl {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 13.5px;
+  text-align: center;
+}
+.grep-ctbl th,
+.grep-ctbl td {
+  padding: 8px 11px;
+  min-width: 52px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, .07);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.grep-ctbl thead th {
+  background: rgba(255, 255, 255, .06);
+  color: var(--fg);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.grep-ctbl thead tr.grep-subhead th {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--mute);
+  background: rgba(16, 16, 22, .96);
+  height: 30px;
+  padding: 4px 8px;
+}
+.grep-ctbl tbody th {
+  background: rgba(12, 12, 17, .96);
+  color: var(--fg);
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  text-align: left;
+}
+.grep-ctbl thead th:first-child {
+  left: 0;
+  z-index: 3;
+  color: var(--acc);
+}
+.grep-ctbl tbody tr {
+  transition: background var(--t-fast);
+}
+.grep-ctbl tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, .016);
+}
+.grep-ctbl th[data-irrep],
+.grep-ctbl th[data-cls],
+.grep-ctbl td[data-irrep] {
+  cursor: pointer;
+}
+.grep-ctbl tr.grep-row-a > th,
+.grep-ctbl tr.grep-row-a > td {
+  background: color-mix(in srgb, var(--acc) 14%, rgba(0, 0, 0, .35));
+}
+.grep-ctbl tr.grep-row-b > th,
+.grep-ctbl tr.grep-row-b > td {
+  background: rgba(96, 165, 250, .14);
+}
+.grep-ctbl th.grep-col-a,
+.grep-ctbl td.grep-col-a {
+  box-shadow: inset 0 0 0 1.5px var(--acc);
+}
+.grep-ctbl th.grep-col-b,
+.grep-ctbl td.grep-col-b {
+  box-shadow: inset 0 0 0 1.5px #60a5fa;
+}
+.grep-ctbl td.grep-zero {
+  color: var(--dim);
+}
+
+/* Frobenius-Schur & Parity badges (shape + border + symbol + text, never colour alone) */
+.grep-fs {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.grep-fs-r {
+  border: 1.5px solid rgba(91, 228, 155, .65);
+  color: #5be49b;
+  background: rgba(91, 228, 155, .1);
+}
+.grep-fs-c {
+  border: 1.5px dashed rgba(96, 165, 250, .75);
+  color: #93c5fd;
+  background: rgba(96, 165, 250, .11);
+}
+.grep-fs-p {
+  border: 2px double rgba(251, 191, 36, .8);
+  color: #fcd34d;
+  background: rgba(251, 191, 36, .12);
+}
+
+.grep-parity-t {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  border: 1.5px solid rgba(91, 228, 155, .55);
+  color: #5be49b;
+  background: rgba(91, 228, 155, .09);
+}
+.grep-parity-s {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  border: 1.5px dashed rgba(244, 114, 182, .75);
+  color: #f9a8d4;
+  background: rgba(244, 114, 182, .11);
+}
+
+/* ---------- Kronecker & Reciprocity matrices ---------- */
+.grep-kron-tbl td {
+  cursor: pointer;
+  font-size: 12.5px;
+  padding: 7px 9px;
+  transition: background var(--t-fast), box-shadow var(--t-fast);
+}
+.grep-kron-tbl td:hover {
+  background: var(--hover);
+}
+.grep-kron-tbl td.grep-cell-on {
+  background: color-mix(in srgb, var(--acc) 22%, rgba(0, 0, 0, .4));
+  box-shadow: inset 0 0 0 2px var(--acc);
+}
+.grep-recip-tbl td {
+  cursor: pointer;
+  min-width: 44px;
+  font-family: var(--mono);
+  transition: background var(--t-fast), box-shadow var(--t-fast);
+}
+.grep-recip-tbl td.grep-nz {
+  background: color-mix(in srgb, var(--acc) 12%, rgba(0, 0, 0, .3));
+  color: var(--fg);
+  font-weight: 700;
+}
+.grep-recip-tbl td.grep-cell-on {
+  background: color-mix(in srgb, var(--acc) 30%, rgba(0, 0, 0, .45));
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+/* ---------- Bar charts (Molien, tensor powers, Sporadic log10) ---------- */
+.grep-bars {
+  display: grid;
+  gap: 7px;
+}
+.grep-bar-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 86px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .28);
+  border: 1px solid rgba(255, 255, 255, .05);
+}
+.grep-bar-track {
+  height: 11px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .07);
+  overflow: hidden;
+}
+.grep-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--acc) 55%, #fff), var(--acc));
+  min-width: 3px;
+  transition: width .3s var(--ease-out);
+}
+.grep-bar-fill.alt {
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+}
+
+/* ---------- Young diagrams & tableaux ---------- */
+.grep-part-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.grep-part-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  min-height: 44px;
+  border-radius: 11px;
+  border: 1px solid var(--line-2);
+  background: rgba(0, 0, 0, .36);
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+}
+.grep-part-btn:hover {
+  border-color: color-mix(in srgb, var(--acc) 60%, var(--line-2));
+  background: var(--hover);
+}
+.grep-part-btn.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 18%, rgba(0, 0, 0, .5));
+}
+.grep-mini-y {
+  display: inline-grid;
+  gap: 2px;
+}
+.grep-mini-y-r {
+  display: flex;
+  gap: 2px;
+}
+.grep-mini-y-c {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  border: 1px solid rgba(255, 255, 255, .65);
+  background: rgba(255, 255, 255, .14);
+}
+.grep-part-btn.on .grep-mini-y-c {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 45%, transparent);
+}
+
+.grep-young-stage {
+  display: inline-grid;
+  gap: 5px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .42);
+}
+.grep-young-row {
+  display: flex;
+  gap: 5px;
+}
+.grep-ybox {
+  width: 48px;
+  height: 48px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(255, 255, 255, .36);
+  background: rgba(255, 255, 255, .05);
+  color: var(--fg);
+  font: 600 16px var(--mono);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.grep-ybox:hover {
+  border-color: var(--acc);
+}
+.grep-ybox-corner {
+  border-color: #fff;
+  background: color-mix(in srgb, var(--acc) 45%, rgba(0, 0, 0, .35));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--acc) 45%, transparent);
+}
+.grep-ybox-arm {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 20%, rgba(0, 0, 0, .4));
+}
+.grep-ybox-leg {
+  border-color: #60a5fa;
+  background: rgba(96, 165, 250, .2);
+}
+.grep-ybox-rim {
+  border-color: #f472b6;
+  border-style: dashed;
+  background: rgba(244, 114, 182, .22);
+}
+.grep-ybox-avail {
+  border-style: dashed;
+  border-color: #5be49b;
+  background: rgba(91, 228, 155, .12);
+}
+.grep-ybox-filled {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 18%, rgba(0, 0, 0, .45));
+}
+
+.grep-syt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+}
+.grep-syt-card {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .36);
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+}
+.grep-syt-r {
+  display: flex;
+  gap: 3px;
+}
+.grep-syt-c {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .05);
+  font: 600 12px var(--mono);
+  display: grid;
+  place-items: center;
+  color: var(--fg);
+}
+
+/* ---------- Composition series chain ---------- */
+.grep-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+}
+.grep-chain-node {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .04);
+  display: grid;
+  gap: 2px;
+  text-align: center;
+}
+.grep-chain-arrow {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  color: var(--mute);
+  font-size: 11.5px;
+}
+.grep-chain-q {
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid color-mix(in srgb, var(--acc) 50%, transparent);
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+  color: var(--acc);
+  font-size: 11.5px;
+}
+.grep-chain-q.nonab {
+  border-color: rgba(244, 114, 182, .65);
+  background: rgba(244, 114, 182, .14);
+  color: #f9a8d4;
+}
+
+/* ---------- Branching SVG & McKay / Fano interactive stages ---------- */
+.grep-svg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .44);
+  padding: 10px;
+}
+.grep-svg-scroll svg {
+  display: block;
+  margin: 0 auto;
+}
+.grep-cv-stage {
+  position: relative;
+  width: 100%;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, .035), rgba(0, 0, 0, .72));
+  overflow: hidden;
+}
+.grep-cv-stage canvas {
+  width: 100%;
+  display: block;
+  touch-action: manipulation;
+}
+.grep-cv-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: none;
+  font-size: 11.5px;
+  color: var(--mute);
+}
+.grep-cv-hint > span {
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .75);
+  border: 1px solid var(--line);
+}
+
+/* ---------- Sporadic Atlas & Appendix cards ---------- */
+.grep-atlas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.grep-sporadic-card {
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.grep-sporadic-card:hover,
+.grep-sporadic-card.on {
+  border-color: color-mix(in srgb, var(--acc) 65%, var(--line-2));
+  background: color-mix(in srgb, var(--acc) 8%, rgba(0, 0, 0, .42));
+}
+.grep-sporadic-card.pariah {
+  border-style: dashed;
+}
+.grep-order-str {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--fg);
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  line-height: 1.45;
+}
+
+/* ---------- Action orbit cards & Fano line chips ---------- */
+.grep-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 8px;
+}
+.grep-action-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(0, 0, 0, .36);
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  color: var(--fg);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.grep-action-card:hover {
+  border-color: var(--acc);
+}
+.grep-action-card.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, rgba(0, 0, 0, .45));
+}
+
+.grep-perm-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.grep-perm-pill {
+  padding: 4px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .03);
+  font: 500 12.5px var(--mono);
+}
+
+/* ---------- Responsive (phone 360-430px) ---------- */
+@media (max-width: 820px) {
+  .grep-ctbl th,
+  .grep-ctbl td {
+    min-width: 44px;
+    height: 44px;
+    padding: 6px 8px;
+    font-size: 12.5px;
+  }
+  .grep-ybox {
+    width: 44px;
+    height: 44px;
+    font-size: 15px;
+  }
+  .grep-action-card {
+    min-height: 48px;
+  }
+  .grep-bar-row {
+    grid-template-columns: 60px minmax(0, 1fr) 68px;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grep-atlas-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .grep-syt-grid {
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  }
+  .grep-chain {
+    padding: 9px;
+    gap: 6px;
+  }
+  .grep-ext-bar {
+    padding: 8px;
+  }
+}
+
+/* ---------- Motion accessibility ---------- */
+html[data-motion="reduced"] :is(.grep-part-btn, .grep-ybox, .grep-sporadic-card, .grep-action-card, .grep-bar-fill, .grep-kron-tbl td, .grep-recip-tbl td) {
+  transition: opacity 140ms ease, background 140ms ease, border-color 140ms ease !important;
+  transform: none !important;
+}
+html[data-motion="off"] :is(.grep-part-btn, .grep-ybox, .grep-sporadic-card, .grep-action-card, .grep-bar-fill, .grep-kron-tbl td, .grep-recip-tbl td) {
+  transition: none !important;
+  animation: none !important;
+}

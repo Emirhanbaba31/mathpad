@@ -1,0 +1,735 @@
+/* MathPad Lie Groups & Lie Algebras Center styles — all custom selectors prefixed with .lie- */
+
+.lie-stage {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lie-panel {
+  padding: 15px 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  align-content: start;
+}
+
+.lie-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lie-panel-title {
+  margin: 0;
+  font-size: 11.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--mute);
+  font-weight: 500;
+}
+
+.lie-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.lie-grid-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.lie-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.lie-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.lie-toolbar-g {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.lie-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.lie-chip {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .025);
+  color: var(--fg);
+  font: 500 12.5px var(--mono);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast), transform var(--t-med) var(--ease-spring);
+}
+
+.lie-chip:hover {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line-2));
+  background: var(--hover);
+}
+
+.lie-chip.on {
+  background: var(--fg);
+  color: #000;
+  border-color: var(--fg);
+}
+
+.lie-sel {
+  width: auto;
+  height: 36px;
+  padding: 0 10px;
+  font-size: 13px;
+  border-radius: 9px;
+}
+
+.lie-num {
+  width: 68px;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 13.5px;
+  border-radius: 9px;
+  text-align: center;
+}
+
+.lie-range {
+  accent-color: var(--acc);
+  cursor: pointer;
+  min-width: 120px;
+  height: 28px;
+}
+
+.lie-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  gap: 8px;
+}
+
+.lie-kpi {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.lie-kpi.acc {
+  border-color: color-mix(in srgb, var(--acc) 55%, transparent);
+  background: color-mix(in srgb, var(--acc) 9%, rgba(0, 0, 0, .4));
+}
+
+.lie-kpi-lbl {
+  font-size: 11px;
+  color: var(--mute);
+}
+
+.lie-kpi-val {
+  font-size: 15.5px;
+  font-weight: 600;
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.lie-kpi-sub {
+  font-size: 11px;
+  color: var(--dim);
+}
+
+.lie-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .04);
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.lie-pill.acc {
+  border-color: color-mix(in srgb, var(--acc) 65%, transparent);
+  color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+}
+
+.lie-pill.ok {
+  border-color: rgba(91, 228, 155, .55);
+  color: #5be49b;
+  background: rgba(91, 228, 155, .1);
+}
+
+.lie-pill.bad {
+  border-color: rgba(255, 107, 107, .55);
+  color: var(--red);
+  background: rgba(255, 107, 107, .1);
+}
+
+.lie-pill.warn {
+  border-color: rgba(255, 209, 102, .5);
+  color: #ffd166;
+  background: rgba(255, 209, 102, .1);
+}
+
+.lie-callout {
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid color-mix(in srgb, var(--acc) 45%, var(--line));
+  background: color-mix(in srgb, var(--acc) 7%, rgba(0, 0, 0, .38));
+  display: grid;
+  gap: 6px;
+}
+
+.lie-callout.ok {
+  border-color: rgba(91, 228, 155, .5);
+  background: rgba(91, 228, 155, .08);
+}
+
+.lie-callout.bad {
+  border-color: rgba(255, 107, 107, .5);
+  background: rgba(255, 107, 107, .09);
+}
+
+.lie-math-box {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .44);
+  border: 1px solid var(--line);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  text-align: center;
+}
+
+.lie-cv-box {
+  position: relative;
+  width: 100%;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, .035), rgba(0, 0, 0, .72));
+  overflow: hidden;
+}
+
+.lie-cv {
+  width: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.lie-cv-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .78);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--mute);
+  pointer-events: none;
+}
+
+.lie-cv-phase {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, .82);
+  border: 1px solid color-mix(in srgb, var(--acc) 55%, var(--line));
+  font: 600 12px var(--mono);
+  color: var(--acc);
+  pointer-events: none;
+}
+
+/* ---------- Tables ---------- */
+.lie-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .42);
+}
+
+.lie-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.lie-tbl th {
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 11px;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--mute);
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, .03);
+  white-space: nowrap;
+}
+
+.lie-tbl td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+  vertical-align: middle;
+}
+
+.lie-tbl tbody tr:hover {
+  background: var(--hover);
+}
+
+.lie-tbl tbody tr.on {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+}
+
+.lie-tbl tbody tr.clickable {
+  cursor: pointer;
+}
+
+/* ---------- Dynkin & Young SVGs ---------- */
+.lie-svg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .48);
+  padding: 14px 10px;
+  text-align: center;
+}
+
+.lie-dynkin-svg {
+  display: inline-block;
+  max-width: none;
+  overflow: visible;
+}
+
+.lie-dyn-edge {
+  stroke: rgba(255, 255, 255, .72);
+  stroke-width: 2;
+  fill: none;
+}
+
+.lie-dyn-edge.affine {
+  stroke: var(--acc);
+  stroke-dasharray: 5 3;
+}
+
+.lie-dyn-arrow {
+  fill: var(--fg);
+}
+
+.lie-dyn-node {
+  cursor: pointer;
+}
+
+.lie-dyn-node circle.long {
+  fill: #09090d;
+  stroke: #f4f4f5;
+  stroke-width: 2.2;
+}
+
+.lie-dyn-node circle.short {
+  fill: #f4f4f5;
+  stroke: #f4f4f5;
+  stroke-width: 2.2;
+}
+
+.lie-dyn-node circle.affine {
+  fill: color-mix(in srgb, var(--acc) 22%, #09090d);
+  stroke: var(--acc);
+  stroke-width: 2.4;
+}
+
+.lie-dyn-node circle.super-iso {
+  fill: #15151d;
+  stroke: #ffd166;
+  stroke-width: 2.2;
+}
+
+.lie-dyn-node circle.super-black {
+  fill: #f472b6;
+  stroke: #f4f4f5;
+  stroke-width: 2.2;
+}
+
+.lie-dyn-node.on circle {
+  stroke: var(--acc);
+  stroke-width: 3.2;
+  filter: drop-shadow(0 0 8px var(--acc));
+}
+
+.lie-dyn-node.deleted {
+  opacity: .24;
+}
+
+.lie-dyn-lbl {
+  fill: var(--fg);
+  font: 600 11.5px var(--mono);
+  text-anchor: middle;
+}
+
+.lie-dyn-mark {
+  fill: var(--acc);
+  font: 600 10.5px var(--mono);
+  text-anchor: middle;
+}
+
+/* ---------- Matrices & Generators ---------- */
+.lie-mat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.lie-mat-card {
+  padding: 11px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .4);
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lie-mat-card.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 10%, rgba(0, 0, 0, .45));
+}
+
+.lie-dynkin-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.lie-dynkin-in {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+}
+
+.lie-dynkin-in span {
+  font: 500 11px var(--mono);
+  color: var(--mute);
+}
+
+/* ---------- Young Tableau Editor ---------- */
+.lie-young-rows {
+  display: grid;
+  gap: 6px;
+}
+
+.lie-young-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lie-young-box {
+  fill: rgba(255, 255, 255, .06);
+  stroke: rgba(255, 255, 255, .75);
+  stroke-width: 1.5;
+}
+
+.lie-young-box:hover {
+  fill: color-mix(in srgb, var(--acc) 22%, rgba(255, 255, 255, .08));
+}
+
+/* ---------- Verma & SU(1,1) Ladder ---------- */
+.lie-ladder {
+  display: grid;
+  gap: 6px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.lie-ladder-row {
+  display: grid;
+  grid-template-columns: 74px 92px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .36);
+  font-size: 12.5px;
+}
+
+.lie-ladder-row.singular {
+  border-color: #ffd166;
+  background: rgba(255, 209, 102, .12);
+}
+
+.lie-ladder-row.quotient-out {
+  opacity: .42;
+  border-style: dashed;
+}
+
+/* ---------- Height bar chart (Kostant exponents) ---------- */
+.lie-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  min-height: 110px;
+  padding: 12px 10px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .4);
+  overflow-x: auto;
+}
+
+.lie-bar-col {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 24px;
+  flex: 1;
+}
+
+.lie-bar-fill {
+  width: 100%;
+  max-width: 26px;
+  border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 45%, #fff));
+  min-height: 4px;
+}
+
+.lie-bar-num {
+  font: 600 10.5px var(--mono);
+  color: var(--fg);
+}
+
+.lie-bar-h {
+  font: 500 10px var(--mono);
+  color: var(--dim);
+}
+
+/* ---------- Branching & Tensor pills ---------- */
+.lie-decomp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .42);
+}
+
+.lie-term {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--acc) 42%, var(--line-2));
+  background: color-mix(in srgb, var(--acc) 8%, rgba(255, 255, 255, .03));
+  font: 600 13px var(--mono);
+}
+
+.lie-gut-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--acc) 35%, var(--line));
+  background: linear-gradient(120deg, color-mix(in srgb, var(--acc) 7%, rgba(0, 0, 0, .5)), rgba(0, 0, 0, .45));
+}
+
+.lie-gut-step {
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: rgba(255, 255, 255, .04);
+  font: 600 12.5px var(--mono);
+  cursor: pointer;
+  color: var(--fg);
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.lie-gut-step:hover,
+.lie-gut-step.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 18%, rgba(0, 0, 0, .5));
+}
+
+.lie-super-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+.lie-swatch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lie-swatch i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 2px solid var(--fg);
+}
+
+.lie-swatch i.long { background: #09090d; }
+.lie-swatch i.short { background: #f4f4f5; }
+.lie-swatch i.affine { background: color-mix(in srgb, var(--acc) 30%, #09090d); border-color: var(--acc); }
+.lie-swatch i.iso { background: #15151d; border-color: #ffd166; }
+.lie-swatch i.blk { background: #f472b6; border-color: #f4f4f5; }
+
+.lie-hadron-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
+  gap: 8px;
+}
+
+.lie-hadron-btn {
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  color: var(--fg);
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+  gap: 3px;
+  font: inherit;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+
+.lie-hadron-btn:hover,
+.lie-hadron-btn.on {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 14%, rgba(0, 0, 0, .5));
+}
+
+.lie-hadron-btn.omega {
+  border-color: rgba(255, 209, 102, .65);
+  background: rgba(255, 209, 102, .08);
+}
+
+.lie-slider-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lie-slider-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--mute);
+}
+
+.lie-serre-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.lie-serre-item {
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, .38);
+  display: grid;
+  gap: 4px;
+}
+
+.lie-serre-item.conn {
+  border-color: color-mix(in srgb, var(--acc) 55%, var(--line));
+  background: color-mix(in srgb, var(--acc) 7%, rgba(0, 0, 0, .42));
+}
+
+/* ---------- Responsive (phone 360-430px) ---------- */
+@media (max-width: 900px) {
+  .lie-grid-2,
+  .lie-grid-side,
+  .lie-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 820px) {
+  .lie-chip {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+  .lie-sel,
+  .lie-num {
+    min-height: 44px;
+    height: 44px;
+  }
+  .lie-ladder-row {
+    grid-template-columns: 60px 76px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .lie-panel {
+    padding: 12px;
+  }
+  .lie-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lie-mat-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Motion accessibility ---------- */
+html[data-motion="reduced"] :is(.lie-chip, .lie-dyn-node circle, .lie-bar-fill) {
+  transition: opacity 140ms ease, background 140ms ease, border-color 140ms ease !important;
+  transform: none !important;
+}
+
+html[data-motion="off"] :is(.lie-chip, .lie-dyn-node circle, .lie-bar-fill) {
+  transition: none !important;
+  animation: none !important;
+}
