@@ -8,51 +8,20 @@ const NS = 'http://www.w3.org/2000/svg';
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#f4f4f5';
 
 // Pause decorative loops when the window is hidden or not focused (saves CPU/GPU and battery).
-// Ambient CSS loops (planet, stars, glows) also rest 8 s after the last real action (click, key, scroll, touch,
-// navigation): while any of them runs the GPU recomposites most of the screen every frame (measured ~12% GPU in
-// Electron vs ~0 at rest), and plain mouse movement used to keep them alive all the time.
-// JS loops (simulations, solar system, group center) keep running while visible and focused: people watch them.
-const WATCH_PAGES = ['evren', 'sim', 'grup'];
+// Also rest after 12 s without input, except on the solar system page where people just watch.
 let idle = false, idleT = 0;
-export const asleep = () => document.hidden || !document.hasFocus() || (idle && !WATCH_PAGES.includes(document.body?.dataset.page));
-const resting = () => document.hidden || !document.hasFocus() || idle;
-const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 8000); if (idle) { idle = false; syncVis(); } };
-for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
+export const asleep = () => document.hidden || !document.hasFocus() || (idle && document.body?.dataset.page !== 'evren');
+const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 12000); if (idle) { idle = false; syncVis(); } };
+for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
 addEventListener('hashchange', wake);
-let wasAsleep = null;
 const syncVis = () => {
-  document.documentElement.classList.toggle('tab-hidden', resting());
-  const now = asleep();
-  if (wasAsleep !== null && wasAsleep !== now) dispatchEvent(new Event('mp-vis')); // JS animation loops listen to this
-  wasAsleep = now;
+  const was = document.documentElement.classList.contains('tab-hidden'), now = asleep();
+  document.documentElement.classList.toggle('tab-hidden', now);
+  if (was !== now) dispatchEvent(new Event('mp-vis')); // JS animation loops listen to this
 };
 document.addEventListener('visibilitychange', syncVis);
 addEventListener('blur', syncVis); addEventListener('focus', syncVis);
 syncVis(); wake();
-
-// Power while in use: every endless decorative loop anywhere on screen makes the GPU recomposite a screen-sized
-// region every frame (measured ~14% GPU with them, ~3% with only the planet turning). Endless loops are cancelled as
-// they start, so their element shows its static CSS look; one-shot animations (page entries, presses, reactions)
-// are untouched. Kept: loops that carry meaning or are the point of the view (Nova, loaders, timers, sync, the
-// travel ship, the planet rotation, simulations and the group center). Nova keeps swimming (cheap JS) and plays its
-// acts and reactions in full; only its continuous idle limb loops (SVG part animations, repainted every frame: ~5%
-// GPU and ~6% CPU measured) stay still between acts.
-const KEEP_LOOPS = '.astro[class*="act-"], .astro[class*="react-"], .astro.talking, .astro.mood-sleep, .nova-ship.boost, .nova-ship.dock-near, .tether-pulse, .orbit-loader, #toast, .dots, .pomo-comet, .thumb, .pl-tex, .pl-clouds, .pl-night, .pl-moon-tex, body.pomo-running .pomo-body, #pomo-pill, .sync-pill, .ship, [data-sim], [data-grp], .busy';
-const dropLoop = a => {
-  const t = a.effect?.target;
-  if (a.animationName && t instanceof Element && a.effect.getTiming().iterations === Infinity && !t.closest(KEEP_LOOPS)) a.cancel();
-};
-document.addEventListener('animationstart', e => {
-  if (!(e.target instanceof Element)) return;
-  for (const a of e.target.getAnimations({ subtree: true }))
-    if (a.effect?.target === e.target && a.animationName === e.animationName && (a.effect.pseudoElement || '') === (e.pseudoElement || '')) dropLoop(a);
-}, true);
-// loops created while the window was paused never fire animationstart: sweep once on wake and after navigation
-const sweepLoops = () => { for (const a of document.getAnimations()) dropLoop(a); };
-addEventListener('mp-vis', () => { if (!resting()) sweepLoops(); });
-addEventListener('focus', () => setTimeout(sweepLoops, 50));
-addEventListener('hashchange', () => setTimeout(sweepLoops, 400));
-setTimeout(sweepLoops, 400);
 
 // Global particle budget across all active FX layers (smooth on mid-range Android).
 const MAX_PARTICLES = 40;

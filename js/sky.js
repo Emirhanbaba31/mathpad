@@ -61,7 +61,7 @@ export function mountSky(cv, { courses, problems, onOpen }) {
     c.globalAlpha = 1;
   }
   let lastT = 0;
-  function loop(t) { if (asleep() || !full()) { raf = 0; return; } if (t - lastT > 95) { rot += .00004 * (t - lastT); lastT = t; draw(t); } raf = requestAnimationFrame(loop); } // power: ~10 fps is plenty for a sky turning 2.3 deg/s
+  function loop(t) { if (asleep() || !full()) { raf = 0; return; } if (t - lastT > 48) { rot += .00004 * (t - lastT); lastT = t; draw(t); } raf = requestAnimationFrame(loop); } // ~20 fps is plenty for a slow sky
   const start = () => { if (!raf && full() && !asleep()) raf = requestAnimationFrame(loop); else if (!full() || asleep()) { cancelAnimationFrame(raf); raf = 0; } };
   const onVis = () => start();
   layout();

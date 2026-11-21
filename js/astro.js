@@ -606,7 +606,6 @@ export function mountRoamer(wrap, onOpen) {
 
   function frame(now) {
     if (asleep()) { raf = 0; return; } // Nova rests while the window is hidden or unfocused
-    if (now - last < 30) { raf = requestAnimationFrame(frame); return; } // power: Nova steps at ~30 fps (slow swim looks the same)
     const dt = Math.min(.05, Math.max(0, (now - last) / 1000)); last = now;
     const W = layer.clientWidth, H = layer.clientHeight;
     if (!W || !H) { raf = full() ? requestAnimationFrame(frame) : 0; return; }
