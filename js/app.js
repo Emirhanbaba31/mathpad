@@ -635,13 +635,15 @@ function tools(tab = 'calc', cid) {
 
 // Simulation center (EEE): each simulation lives in js/sim.js, loaded on first visit
 async function sim(id) {
-  const { SIMS, mountSim } = await import('./sim.js');
-  const cur = SIMS.find(x => x.id === id) || SIMS[0];
-  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Simülasyon merkezi</p><h1>${esc(cur.title)}</h1></div></header>
-    ${groupEntryCard()}
-    <div class="tabs">${SIMS.map(x => `<a href="#/sim/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon)}<span>${esc(x.title)}</span></a>`).join('')}</div>
-    <div class="card pad tool-body sim-body" data-sim></div></div>`;
-  return mountSim($('[data-sim]'), cur.id);
+  const { FIELDS, allSims, mountSimCenter } = await import('./simcenter.js');
+  const sims = await allSims();
+  const cur = sims.find(x => x.id === id) || sims[0];
+  const fields = FIELDS.filter(f => sims.some(s => s.field === f.id));
+  view.innerHTML = `<div class="page"><header class="page-h"><div><p class="eyebrow">Simülasyon Merkezi · ${esc(FIELDS.find(f => f.id === cur.field)?.title || '')}</p><h1>${esc(cur.title)}</h1></div></header>
+    <nav class="tabs grp-chapters" aria-label="Bölümler">${fields.map(f => `<a href="#/sim/${sims.find(s => s.field === f.id).id}" class="tab ${f.id === cur.field ? 'on' : ''}">${esc(f.title)}</a>`).join('')}</nav>
+    <div class="tabs">${sims.filter(x => x.field === cur.field).map(x => `<a href="#/sim/${x.id}" class="tab ${x.id === cur.id ? 'on' : ''}">${icon(x.icon in ICONS_OK ? x.icon : 'sparkle')}<span>${esc(x.title)}</span></a>`).join('')}</div>
+    <div class="card pad tool-body sim-body grp-body" data-sim></div></div>`;
+  return mountSimCenter($('[data-sim]'), cur);
 }
 
 // Group Theory Study Center (#/grup): loaded on demand like sim

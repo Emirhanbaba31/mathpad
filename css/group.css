@@ -1045,3 +1045,8 @@ html[data-motion="off"] :is(.grp-entry, .grp-chip, .grp-el, .grp-qopt, .grp-tile
 }
 .grp-panel > *, .lie-panel > *, .phy-stage > * { min-width: 0; max-width: 100%; }
 .grp-panel .katex-display, .lie-panel .katex-display { overflow-x: auto; overflow-y: hidden; }
+
+/* Simulation center: wide segmented controls (many modes) scroll inside the card on phones instead of being clipped. */
+.sim-body .seg { max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.sim-body .seg::-webkit-scrollbar { display: none; }
+.sim-body [class$="-toolbar-g"], .sim-body [class*="-toolbar-g "] { min-width: 0; max-width: 100%; }

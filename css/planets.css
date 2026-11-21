@@ -1769,6 +1769,32 @@ html[data-motion="off"] .pl-wave {
   display: none !important;
 }
 
-/* power: background-position animations repaint every frame; stepping them (about 2 repaints/s) keeps the
-   slow planet rotation looking smooth while cutting GPU/CPU use ~30x */
-.pl-tex, .pl-clouds, .pl-night, .pl-moon-tex { animation-timing-function: steps(240) !important; }
+/* Smooth, cheap rotation: the texture lives on a 6x-wide ::before that slides with transform (GPU composited,
+   no repaint). The host keeps its image only so ::before can inherit it (size 0 = not drawn) and keeps its
+   animation-duration for ::before to inherit. Background-position p of the old 2:1 mapping equals a
+   translateX of (100% - p) / 6, so each planet keeps its start angle and spin direction (--px0 -> --px1). */
+.pl-tex, .pl-clouds, .pl-night, .pl-moon-tex {
+  overflow: hidden;
+  background-size: 0 0 !important;
+  animation-name: none !important;
+  will-change: auto !important;
+}
+.pl-tex::before, .pl-clouds::before, .pl-night::before, .pl-moon-tex::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -300%;
+  width: 600%;
+  height: 100%;
+  background-image: inherit;
+  background-repeat: repeat-x;
+  background-size: calc(100% / 3) 100%;
+  background-position: 0 50%;
+  animation: pl-spin-t linear infinite;
+  animation-duration: inherit;
+  will-change: transform;
+}
+@keyframes pl-spin-t {
+  from { transform: translateX(calc((100% - var(--px0, 0%)) / 6)); }
+  to   { transform: translateX(calc((100% - var(--px1, -200%)) / 6)); }
+}
