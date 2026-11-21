@@ -8,16 +8,23 @@ const NS = 'http://www.w3.org/2000/svg';
 const accent = () => getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || '#f4f4f5';
 
 // Pause decorative loops when the window is hidden or not focused (saves CPU/GPU and battery).
-// Also rest after 12 s without input, except on the solar system page where people just watch.
+// Ambient CSS loops (planet, stars, glows) also rest 8 s after the last real action (click, key, scroll, touch,
+// navigation): while any of them runs the GPU recomposites most of the screen every frame (measured ~12% GPU in
+// Electron vs ~0 at rest), and plain mouse movement used to keep them alive all the time.
+// JS loops (simulations, solar system, group center) keep running while visible and focused: people watch them.
+const WATCH_PAGES = ['evren', 'sim', 'grup'];
 let idle = false, idleT = 0;
-export const asleep = () => document.hidden || !document.hasFocus() || (idle && document.body?.dataset.page !== 'evren');
-const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 12000); if (idle) { idle = false; syncVis(); } };
-for (const ev of ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
+export const asleep = () => document.hidden || !document.hasFocus() || (idle && !WATCH_PAGES.includes(document.body?.dataset.page));
+const resting = () => document.hidden || !document.hasFocus() || idle;
+const wake = () => { clearTimeout(idleT); idleT = setTimeout(() => { idle = true; syncVis(); }, 8000); if (idle) { idle = false; syncVis(); } };
+for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) addEventListener(ev, wake, { passive: true, capture: true });
 addEventListener('hashchange', wake);
+let wasAsleep = null;
 const syncVis = () => {
-  const was = document.documentElement.classList.contains('tab-hidden'), now = asleep();
-  document.documentElement.classList.toggle('tab-hidden', now);
-  if (was !== now) dispatchEvent(new Event('mp-vis')); // JS animation loops listen to this
+  document.documentElement.classList.toggle('tab-hidden', resting());
+  const now = asleep();
+  if (wasAsleep !== null && wasAsleep !== now) dispatchEvent(new Event('mp-vis')); // JS animation loops listen to this
+  wasAsleep = now;
 };
 document.addEventListener('visibilitychange', syncVis);
 addEventListener('blur', syncVis); addEventListener('focus', syncVis);

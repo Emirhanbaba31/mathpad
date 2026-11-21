@@ -2927,3 +2927,8 @@ html.tab-hidden *, html.tab-hidden *::before, html.tab-hidden *::after { animati
 .pb-top { background: rgba(0, 0, 0, .86); }
 /* desktop: the tab row has no visible scrollbar and a mouse wheel only scrolls vertically, so wrap instead of scrolling */
 @media (min-width: 821px) { .tabs { flex-wrap: wrap; overflow: visible; } }
+/* power (1.12.1, measured in Electron while active): the nebula is a 140%-of-screen layer; animating it made the GPU
+   recomposite the whole screen every frame (~6% GPU) for a 4%-over-80s drift nobody sees, so it stays still. The
+   full-screen twinkle layer changes opacity in 12 steps per cycle instead of every frame. */
+#space .neb { animation: none !important; }
+#space .tw { animation-timing-function: steps(12) !important; }
