@@ -31,7 +31,7 @@ try {
     $saved = Join-Path $keyDir 'sifre.dpapi'
     $ok = $false
     if (Test-Path $saved) {
-      try { $env:MP_KS_PASS = & $plain (Get-Content $saved -Raw | ConvertTo-SecureString); $ok = & $test } catch { $ok = $false }
+      try { $env:MP_KS_PASS = & $plain ((Get-Content $saved -Raw).Trim() | ConvertTo-SecureString); $ok = & $test } catch { $ok = $false }
       if ($ok) { Write-Host 'Kayitli sifre kullanildi.' -ForegroundColor DarkGray }
       else { Remove-Item $saved -Force; Write-Host 'Kayitli sifre gecersiz, yeniden sorulacak.' -ForegroundColor Yellow }
     }
