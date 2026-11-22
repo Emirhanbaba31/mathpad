@@ -36,6 +36,8 @@ export const SHADER_UNIFORMS = Object.freeze({
     'uSkyGravBlue',
     'uSkyTex',
     'uHasSkyTex',
+    'uJet',
+    'uHotSpot',
   ]),
   present: Object.freeze([
     'uFrameTex',
@@ -159,29 +161,58 @@ vec3 geodesicAccel(vec3 p, float h2) {
   return (-3.0 * h2 / r5) * p;
 }
 
-// Ekvatoral ince yığılma diski (y = 0) yayımı ve göreli renk/parlaklık kayması
-vec4 shadeDisk(vec3 hitPos, float rHit, float rInEff, float bz, float obsShift, float crossings) {
-  float x = clamp(rInEff / max(rHit, rInEff), 0.0, 1.0);
-  // Shakura-Sunyaev normalize profili (r_peak = 49/36 r_in noktasında 1.0; 7^(7/4)/6^(3/2) ≈ 2.04972073)
-  float sx = sqrt(x);
-  float ss = (sx * sqrt(sx)) * sqrt(sqrt(max(1.0 - sx, 0.0))) * 2.04972073;
+// Shakura-Sunyaev normalize profili (r_peak = 49/36 r_in noktasında 1.0; 7^(7/4)/6^(3/2) ≈ 2.04972073)
+float ssProfile(float r, float rIn) {
+  float sx = sqrt(clamp(rIn / max(r, rIn), 0.0, 1.0));
+  return (sx * sqrt(sx)) * sqrt(sqrt(max(1.0 - sx, 0.0))) * 2.04972073;
+}
+
+// Disk dokusu: alan-bükülmeli (domain-warped) türbülans + ince akış şeritleri, sarmal koordinatlarda
+float diskLayer(float a, float logR, float seed) {
+  float sa = a + logR * 3.6;
+  vec3 p = vec3(cos(sa) * 2.4, sin(sa) * 2.4, logR * 6.5 + seed);
+  vec3 q = vec3(fbm3(p + vec3(0.0, 1.7, seed)), fbm3(p + vec3(5.2, 1.3, 2.8)), fbm3(p + vec3(2.1, 7.4, 4.6 + seed)));
+  float n = fbm3(p * 1.7 + 2.6 * q);
+  float lanes = 0.5 + 0.5 * sin(logR * 38.0 + n * 7.0);
+  return clamp(n * (0.62 + 0.62 * lanes) * 1.35, 0.0, 1.6);
+}
+
+// Kepler diferansiyel dönmesiyle taşınan doku: iç kısımlar daha hızlı döner ve desen gerçekçi biçimde
+// kesilir (shear). Sonsuza dek sarılmaması için yarım periyot kaydırılmış iki katman çapraz geçişle karışır.
+float diskFlow(float r, float phi, float omega, float t) {
+  float logR = log(max(r, 1.0));
+  const float P = 4.0;
+  float ph1 = fract(t / P);
+  float ph2 = fract(t / P + 0.5);
+  float w = 1.0 - abs(2.0 * ph1 - 1.0);
+  // +y ekseninden bakıldığında madde phi(t) = phi0 - omega t ile döner -> örnekleme açısı phi + omega t
+  float n1 = diskLayer(phi + omega * ph1 * P * 9.0, logR, 0.0);
+  float n2 = diskLayer(phi + omega * ph2 * P * 9.0, logR, 11.0);
+  return mix(n2, n1, w);
+}
+
+// ISCO'nun hemen dışında Kepler periyoduyla dolanan sıcak gaz topağı (Sgr A* parlamaları gibi)
+float hotSpotAt(vec3 p) {
+  float rh = max(uDiskInner * 1.3, 6.2);
+  float om = 1.0 / (rh * sqrt(rh) + uSpin);
+  float a = 1.1 - om * uTime * 9.0;
+  vec3 d = p - vec3(cos(a) * rh, 0.0, sin(a) * rh);
+  return exp(-dot(d, d) * 0.55);
+}
+
+// Ekvatoral yığılma diski (y = 0) yayımı ve göreli renk/parlaklık kayması.
+// mu: ışının disk düzlemine göre eğiminin sinüsü; yarı saydam diskte optik derinlik 1/|mu| ile artar.
+vec4 shadeDisk(vec3 hitPos, float rHit, float rInEff, float bz, float obsShift, float crossings, float mu) {
+  float ss = ssProfile(rHit, rInEff);
   float innerFade = smoothstep(rInEff, rInEff * 1.055, rHit);
   float outerFade = smoothstep(uDiskOuter, uDiskOuter * 0.70, rHit);
 
-  // Kepler (Kerr yaklaşık) açısal hızı ve dikişsiz sarmal türbülans
+  // Kepler (Kerr yaklaşık) açısal hızı ve Kepler akışıyla taşınan türbülans
   float r32 = rHit * sqrt(rHit);
   float omega = 1.0 / max(r32 + uSpin, 0.5);
   float phi = (abs(hitPos.x) + abs(hitPos.z) > 1e-6) ? atan(hitPos.z, hitPos.x) : 0.0;
-  // +y ekseninden bakıldığında saat yönünün tersine dönüş: phi(t) = phi0 - omega * t -> phi_mat = phi + omega * t
-  float phiMat = phi + omega * uTime * 9.0;
-  float logR = log(max(rHit, 1.0));
-  float sp1 = phiMat + logR * 5.2;
-  float sp2 = phiMat * 2.0 + logR * 9.0;
-  float n1 = fbm3(vec3(cos(sp1) * 2.1, sin(sp1) * 2.1, logR * 4.4));
-  float n2 = vnoise3(vec3(cos(sp2) * 3.8, sin(sp2) * 3.8, logR * 7.8 + 4.1));
-  // İnce dairesel akış şeritleri + türbülanslı plazma düğümleri
-  float rings = 0.84 + 0.16 * sin(logR * 26.0 + n1 * 4.5);
-  float turb = clamp((0.52 + 0.62 * n1 + 0.24 * n2) * rings, 0.28, 1.55);
+  float turb = diskFlow(rHit, phi, omega, uTime);
+  float spot = (uHotSpot > 0.5) ? hotSpotAt(hitPos) : 0.0;
 
   // Birleşik kütleçekimsel kırmızıya kayma + Doppler ışınlaması g = 1 / (1 + z)
   float gGrav = sqrt(max(1.0 - 2.0 / rHit, 0.025));
@@ -198,18 +229,54 @@ vec4 shadeDisk(vec3 hitPos, float rHit, float rInEff, float bz, float obsShift, 
   g = clamp(g, 0.14, 3.6);
 
   // Gözlenen sıcaklık T_obs = g * T_emit ve bolometrik g⁴ parlaklık ölçeği (I_obs ∝ (g * T_emit)⁴)
-  float tEmit = 5800.0 * uTempScale * ss * (0.86 + 0.24 * turb);
-  float tObs = g * tEmit;
-  vec3 bb = blackbodyToRGB(tObs);
+  float tEmit = 5800.0 * uTempScale * ss * (0.8 + 0.3 * turb) * (1.0 + 0.4 * spot);
+  vec3 bb = blackbodyToRGB(g * tEmit);
 
   float ssg = ss * g;
   float ssg2 = ssg * ssg;
   float bolom = ssg2 * ssg2; // tam (ss * g)^4
-  // İkincil merceklenmiş geçişler (foton halkası) gerçekte daha optik olarak ince bir yayım katkısı ekler
-  float orderBoost = (crossings > 0.5) ? 1.18 : 1.0;
-  float intensity = bolom * turb * innerFade * outerFade * uDiskBrightness * orderBoost * 1.65;
-  float alpha = clamp((0.36 + 0.54 * ss * turb) * innerFade * outerFade, 0.0, 0.92);
-  return vec4(bb * intensity, alpha);
+  // Yarı saydam disk: optik derinlik 1/|mu| ile büyür, kenardan bakılınca disk yoğun ve parlak görünür
+  float muC = max(abs(mu), 0.06);
+  float tau = (0.35 + 0.85 * turb) * (0.4 + 0.6 * ss) * 0.55 / muC;
+  float alpha = (1.0 - exp(-tau)) * innerFade * outerFade;
+  // İkincil merceklenmiş geçişler (foton halkası) ek bir ince yayım katkısı verir
+  float orderBoost = (crossings > 0.5) ? 1.15 : 1.0;
+  float intensity = bolom * (0.5 + 0.8 * turb) * (1.0 + 4.0 * spot) * uDiskBrightness * orderBoost * 2.3 * alpha;
+  return vec4(bb * intensity, clamp(alpha, 0.0, 0.96));
+}
+
+// Göreli jet: dönme ekseni (±y) boyunca genişleyen koni; düğümler dışarı akar. Yaklaşan jet Doppler
+// ile parlar (D^(2+α)), karşı jet söner. Işın kameradan geriye izlendiği için foton yönü -vel'dir.
+vec3 jetEmission(vec3 p, vec3 vel, float ds) {
+  float z = abs(p.y);
+  if (z < 2.6 || z > 80.0) return vec3(0.0);
+  float rho = length(p.xz);
+  float w = 0.5 + 0.15 * z;
+  float dens = exp(-(rho * rho) / (w * w)) / (1.0 + 0.012 * z * z);
+  if (dens < 1e-4) return vec3(0.0);
+  float knots = 0.45 + 0.55 * pow(0.5 + 0.5 * sin(z * 0.85 - uTime * 7.0), 3.0);
+  float fil = 0.75 + 0.25 * vnoise3(vec3(p.x * 1.3, z * 0.35 - uTime * 2.0, p.z * 1.3));
+  vec3 nPh = -normalize(vel);
+  const float beta = 0.92;
+  const float gam = 2.551;
+  float D = 1.0 / (gam * (1.0 - beta * nPh.y * sign(p.y)));
+  float boost = pow(D, 2.6);
+  vec3 col = mix(vec3(0.62, 0.72, 1.0), vec3(1.0, 0.86, 0.78), clamp(z / 45.0, 0.0, 1.0));
+  float baseFade = smoothstep(3.0, 11.0, z); // the jet base stays faint so the shadow is not covered
+  return col * dens * knots * fil * boost * baseFade * ds * 2.4;
+}
+
+// Diskin hemen üstünde ve altında yumuşak, optik olarak ince sıcak korona pusu
+vec3 coronaEmission(vec3 p, float rInEff, float ds, float obsShift) {
+  float rm = length(p);
+  if (rm < rInEff || rm > uDiskOuter * 1.15) return vec3(0.0);
+  float hC = 0.16 * rm + 0.25;
+  float dz = abs(p.y);
+  if (dz > 4.0 * hC) return vec3(0.0);
+  float ssC = ssProfile(rm, rInEff);
+  float fadeO = smoothstep(uDiskOuter * 1.15, uDiskOuter * 0.6, rm);
+  float dens = exp(-dz / hC) * ssC * fadeO;
+  return blackbodyToRGB(5800.0 * uTempScale * ssC * 0.9 * obsShift) * dens * ds * 0.026 * uDiskBrightness;
 }
 
 // ACES filmik ton eşleme (yüksek dinamik aralıklı g⁴ Doppler parlamasını doğal korur)
@@ -269,7 +336,7 @@ vec3 traceBlackHole(vec2 fragCoord) {
         vec3 hitPos = pos + dLoc * tDisk;
         float rHit = length(hitPos);
         if (rHit >= rInEff && rHit <= uDiskOuter) {
-          vec4 dCol = shadeDisk(hitPos, rHit, rInEff, bzFlat, 1.0, 0.0);
+          vec4 dCol = shadeDisk(hitPos, rHit, rInEff, bzFlat, 1.0, 0.0, dLoc.y);
           accColor += transmittance * dCol.rgb;
           transmittance *= (1.0 - dCol.a);
         }
@@ -339,6 +406,14 @@ vec3 traceBlackHole(vec2 fragCoord) {
       pos += (hStep / 6.0) * (k1x + 2.0 * k2x + 2.0 * k3x + k4x);
       vel += (hStep / 6.0) * (k1v + 2.0 * k2v + 2.0 * k3v + k4v);
 
+      // Hacimsel yayım (yol parçasının orta noktasında): disk korona pusu ve göreli jet
+      if (transmittance > 0.02) {
+        vec3 midP = 0.5 * (prevPos + pos);
+        float segLen = length(pos - prevPos);
+        if (uShowDisk > 0.5) accColor += transmittance * coronaEmission(midP, rInEff, segLen, obsShift);
+        if (uJet > 0.5) accColor += transmittance * jetEmission(midP, vel, segLen);
+      }
+
       // Ekvatoral disk düzlemi (y = 0) geçiş kontrolü
       if (uShowDisk > 0.5 && transmittance > 0.02) {
         if ((prevPos.y > 0.0 && pos.y <= 0.0) || (prevPos.y < 0.0 && pos.y >= 0.0)) {
@@ -347,7 +422,9 @@ vec3 traceBlackHole(vec2 fragCoord) {
           vec3 hitPos = mix(prevPos, pos, frac);
           float rHit = length(hitPos);
           if (rHit >= rInEff && rHit <= uDiskOuter) {
-            vec4 dCol = shadeDisk(hitPos, rHit, rInEff, bz, obsShift, crossings);
+            vec3 segDir = pos - prevPos;
+            float muHit = segDir.y / max(length(segDir), 1e-6);
+            vec4 dCol = shadeDisk(hitPos, rHit, rInEff, bz, obsShift, crossings, muHit);
             accColor += transmittance * dCol.rgb;
             transmittance *= (1.0 - dCol.a);
             crossings += 1.0;
@@ -379,9 +456,14 @@ vec3 traceBlackHole(vec2 fragCoord) {
     accColor += transmittance * skyCol;
   }
 
+#ifdef HDR_OUT
+  // Doğrusal HDR çıktı: parıltı (bloom), pozlama ve ton eşleme bileşim geçişinde yapılır
+  return accColor;
+#else
   // HDR -> ACES filmik ton eşleme -> sRGB gama kodlama (RGBA8 FBO için)
   vec3 mapped = acesToneMap(accColor * 0.3);
   return safePow3(mapped, 1.0 / 2.2);
+#endif
 }
 `;
 
@@ -424,6 +506,8 @@ uniform vec3 uShipBeta;
 uniform float uSkyGravBlue;
 uniform sampler2D uSkyTex;
 uniform float uHasSkyTex;
+uniform float uJet;
+uniform float uHotSpot;
 
 out vec4 fragColor;
 
@@ -513,6 +597,8 @@ uniform vec3 uShipBeta;
 uniform float uSkyGravBlue;
 uniform sampler2D uSkyTex;
 uniform float uHasSkyTex;
+uniform float uJet;
+uniform float uHotSpot;
 
 vec3 proceduralSky(vec3 dir);
 
@@ -547,5 +633,105 @@ uniform sampler2D uFrameTex;
 varying vec2 vUv;
 void main() {
   gl_FragColor = vec4(texture2D(uFrameTex, vUv).rgb, 1.0);
+}
+`;
+
+// =====================================================================
+// WebGL 2 HDR SON İŞLEME: PARILTI (BLOOM) + SİNEMATİK BİLEŞİM
+// Işın izleme doğrusal HDR bir dokuya (RGBA16F) yazılır; parlak bölgeler yarım çözünürlükten başlayan
+// bir mip zincirinde küçültülüp (13 dokunuşlu süzgeç) çadır süzgeciyle geri büyütülerek toplanır.
+// Bileşimde pozlama, ACES ton eşleme, hafif kromatik sapma, vinyet ve film greni uygulanır.
+// =====================================================================
+
+/** Parıltı zincirinin uniform adları. */
+export const POST_UNIFORMS = Object.freeze({
+  down: Object.freeze(['uSrc', 'uTexel', 'uFirst', 'uThreshold']),
+  up: Object.freeze(['uSrc', 'uTexel', 'uRadius']),
+  composite: Object.freeze(['uScene', 'uBloom', 'uExposure', 'uBloomStrength', 'uTime', 'uCinematic']),
+});
+
+/** 13 dokunuşlu küçültme süzgeci; ilk geçişte yumuşak eşikli parlaklık seçimi ve ateşböceği bastırma. */
+export const DOWNSAMPLE_FRAG_300 = `#version 300 es
+precision highp float;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+uniform float uFirst;
+uniform float uThreshold;
+in vec2 vUv;
+out vec4 fragColor;
+vec3 tap(vec2 o) { return texture(uSrc, vUv + o * uTexel).rgb; }
+void main() {
+  vec3 a = tap(vec2(-2.0, 2.0)), b = tap(vec2(0.0, 2.0)), c = tap(vec2(2.0, 2.0));
+  vec3 d = tap(vec2(-2.0, 0.0)), e = tap(vec2(0.0, 0.0)), f = tap(vec2(2.0, 0.0));
+  vec3 g = tap(vec2(-2.0, -2.0)), h = tap(vec2(0.0, -2.0)), i = tap(vec2(2.0, -2.0));
+  vec3 j = tap(vec2(-1.0, 1.0)), k = tap(vec2(1.0, 1.0)), l = tap(vec2(-1.0, -1.0)), m = tap(vec2(1.0, -1.0));
+  vec3 col = e * 0.125 + (a + c + g + i) * 0.03125 + (b + d + f + h) * 0.0625 + (j + k + l + m) * 0.125;
+  if (uFirst > 0.5) {
+    float br = max(col.r, max(col.g, col.b));
+    float knee = uThreshold * 0.5;
+    float soft = clamp(br - uThreshold + knee, 0.0, 2.0 * knee);
+    soft = soft * soft / (4.0 * knee + 1e-4);
+    col *= max(soft, br - uThreshold) / max(br, 1e-4);
+    col = min(col, vec3(48.0));
+  }
+  fragColor = vec4(col, 1.0);
+}
+`;
+
+/** 9 dokunuşlu çadır (tent) büyütme süzgeci; toplamalı karıştırmayla bir üst mip seviyesine eklenir. */
+export const UPSAMPLE_FRAG_300 = `#version 300 es
+precision highp float;
+uniform sampler2D uSrc;
+uniform vec2 uTexel;
+uniform float uRadius;
+in vec2 vUv;
+out vec4 fragColor;
+void main() {
+  vec2 d = uTexel * uRadius;
+  vec3 c = texture(uSrc, vUv).rgb * 4.0;
+  c += (texture(uSrc, vUv + vec2(-d.x, 0.0)).rgb + texture(uSrc, vUv + vec2(d.x, 0.0)).rgb
+      + texture(uSrc, vUv + vec2(0.0, -d.y)).rgb + texture(uSrc, vUv + vec2(0.0, d.y)).rgb) * 2.0;
+  c += texture(uSrc, vUv + vec2(-d.x, -d.y)).rgb + texture(uSrc, vUv + vec2(d.x, -d.y)).rgb
+     + texture(uSrc, vUv + vec2(-d.x, d.y)).rgb + texture(uSrc, vUv + vec2(d.x, d.y)).rgb;
+  fragColor = vec4(c / 16.0, 1.0);
+}
+`;
+
+/** Sinematik bileşim: sahne + parıltı -> pozlama -> ACES -> vinyet, kromatik sapma, film greni -> sRGB. */
+export const COMPOSITE_FRAG_300 = `#version 300 es
+precision highp float;
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+uniform float uExposure;
+uniform float uBloomStrength;
+uniform float uTime;
+uniform float uCinematic;
+in vec2 vUv;
+out vec4 fragColor;
+vec3 aces(vec3 x) {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+float grainHash(vec2 p) {
+  vec3 q = fract(vec3(p.xyx) * 0.1031);
+  q += dot(q, q.yzx + 33.33);
+  return fract((q.x + q.y) * q.z);
+}
+void main() {
+  vec2 c = vUv - 0.5;
+  float r2 = dot(c, c);
+  vec3 col;
+  if (uCinematic > 0.5) {
+    vec2 ca = c * r2 * 0.018;
+    col = vec3(texture(uScene, vUv + ca).r, texture(uScene, vUv).g, texture(uScene, vUv - ca).b);
+  } else {
+    col = texture(uScene, vUv).rgb;
+  }
+  col += texture(uBloom, vUv).rgb * uBloomStrength;
+  col = aces(col * uExposure);
+  if (uCinematic > 0.5) col *= 1.0 - 0.38 * smoothstep(0.05, 0.42, r2);
+  col = pow(max(col, vec3(0.0)), vec3(1.0 / 2.2));
+  // tonal kademelenmeyi (banding) kıran ince film greni
+  col += (grainHash(gl_FragCoord.xy + fract(uTime * 7.31) * 517.0) - 0.5) * (uCinematic > 0.5 ? 0.022 : 0.006);
+  fragColor = vec4(col, 1.0);
 }
 `;

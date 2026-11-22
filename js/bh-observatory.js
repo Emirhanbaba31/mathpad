@@ -13,6 +13,9 @@ import {
   RAYTRACE_FRAG_100,
   PRESENT_VERT_100,
   PRESENT_FRAG_100,
+  DOWNSAMPLE_FRAG_300,
+  UPSAMPLE_FRAG_300,
+  COMPOSITE_FRAG_300,
 } from './bh-shaders.js';
 
 const _isDomRuntime = typeof window !== 'undefined'
@@ -100,6 +103,7 @@ function findCatalog(id) {
 const CAT_SGRA = findCatalog('sgr-a');
 const CAT_M87 = findCatalog('m87-star');
 const CAT_CYGX1 = findCatalog('cygnus-x1');
+const CAT_TON618 = findCatalog('ton-618');
 
 /** Kara Delik Gözlemevi hazır önayarları (gerçek katalog verileri js/bh-core.js'ten alınır). */
 export const OBSERVATORY_PRESETS = Object.freeze([
@@ -203,6 +207,27 @@ export const OBSERVATORY_PRESETS = Object.freeze([
     lensing: true,
     showOverlay: true,
   }),
+  Object.freeze({
+    id: 'ton-618',
+    label: 'Kuasar + jet',
+    catalogId: 'ton-618',
+    description: 'TON 618: sıcak, parlak bir kuasar diski ve dönme ekseni boyunca göreli jet',
+    massSolar: CAT_TON618 ? CAT_TON618.massSolar : 4.07e10,
+    distancePc: CAT_TON618 ? CAT_TON618.distancePc : null,
+    spin: 0,
+    inclinationDeg: 58,
+    distanceM: 52,
+    yaw: 0.9,
+    diskOuterM: 24,
+    tempScale: 1.55,
+    diskBrightness: 1.1,
+    jet: true,
+    showDisk: true,
+    doppler: true,
+    gravRedshift: true,
+    lensing: true,
+    showOverlay: false,
+  }),
 ]);
 
 /** Kalite menüsü mod tanımları. */
@@ -233,6 +258,9 @@ export const DEFAULT_STATE = Object.freeze({
   gravRedshift: true,
   lensing: true,
   showOverlay: false,
+  jet: false,
+  hotSpot: true,
+  cinematic: true,
   qualityMode: 'auto',
 });
 
@@ -286,6 +314,7 @@ export function resolveObservatoryOpts(opts = {}) {
         gravRedshift: foundPreset.gravRedshift,
         lensing: foundPreset.lensing,
         showOverlay: foundPreset.showOverlay,
+        jet: !!foundPreset.jet,
       });
     } else {
       // Katalogdaki herhangi bir gerçek kara delik id'sini de kabul et (örn. 'ton-618', 'gaia-bh1')
@@ -352,6 +381,8 @@ export function mapObservatoryParams(state) {
     useDoppler: state.doppler ? 1 : 0,
     useGravRedshift: state.gravRedshift ? 1 : 0,
     useLensing: state.lensing ? 1 : 0,
+    jet: state.jet ? 1 : 0,
+    hotSpot: state.hotSpot ? 1 : 0,
     isApproximateKerr,
     iscoInsideSchwarzschildHorizon,
   };
@@ -1274,6 +1305,12 @@ export function mountObservatory(host, opts = {}) {
   let skyTex = null;
   let hasSkyTex = false;
   let cachedSkyImg = null;
+  // HDR + bloom pipeline (WebGL 2 with float render targets); falls back to the LDR path when unavailable
+  let hdr = false;
+  let dsProg = null, usProg = null, cpProg = null;
+  let dsLoc = {}, usLoc = {}, cpLoc = {};
+  let hdrScene = null; // { tex, fbo, w, h }
+  let bloomLevels = []; // [{ tex, fbo, w, h }]
 
   const instId = ++_obsInstanceSeq;
   const slId = k => `bh-sl-${k}-${instId}`;
@@ -1449,6 +1486,9 @@ export function mountObservatory(host, opts = {}) {
               ['gravRedshift', 'Kütleçekimsel kırmızıya kayma', 'İç disk ışığı derin kuyuda kırmızıya kayar'],
               ['lensing', 'Gökyüzü merceklenmesi', 'Kapatıldığında düz Minkowski uzayı ile karşılaştır'],
               ['showOverlay', 'Kuramsal gölge ve ölçek', 'b_c = 3√3 M, r_ph = 3M çemberleri ve r_s çubuğu'],
+              ['hotSpot', 'Sıcak gaz topağı (parlama)', 'ISCO dışında Kepler periyoduyla dolanan parlak gaz; merceklenmiş görüntüsü de görünür'],
+              ['jet', 'Göreli jet', 'Dönme ekseni boyunca ~0,92c jet: yaklaşan kol Doppler ile parlar, karşı jet söner'],
+              ['cinematic', 'Sinematik parıltı', 'HDR parıltı (bloom), vinyet, kromatik sapma ve film greni'],
             ].map(([key, title, tip]) => `<button type="button" class="bh-toggle ${state[key] ? 'bh-on' : ''}" data-bh-toggle="${key}" role="switch" aria-checked="${state[key] ? 'true' : 'false'}" title="${esc(tip)}">
               <span>${esc(title)}</span>
               <span class="bh-toggle-state" data-bh-ts="${key}">${state[key] ? '✓ Açık' : '○ Kapalı'}</span>
@@ -1626,6 +1666,121 @@ export function mountObservatory(host, opts = {}) {
     return true;
   }
 
+  function initHdr() {
+    if (!hdr) return;
+    dsProg = linkProgram(gl, PRESENT_VERT_300, DOWNSAMPLE_FRAG_300);
+    usProg = linkProgram(gl, PRESENT_VERT_300, UPSAMPLE_FRAG_300);
+    cpProg = linkProgram(gl, PRESENT_VERT_300, COMPOSITE_FRAG_300);
+    if (!dsProg || !usProg || !cpProg) { destroyHdr(); hdr = false; return; }
+    const locs = (prog, names) => Object.fromEntries(names.map(n => [n, gl.getUniformLocation(prog, n)]));
+    dsLoc = locs(dsProg, ['uSrc', 'uTexel', 'uFirst', 'uThreshold']);
+    usLoc = locs(usProg, ['uSrc', 'uTexel', 'uRadius']);
+    cpLoc = locs(cpProg, ['uScene', 'uBloom', 'uExposure', 'uBloomStrength', 'uTime', 'uCinematic']);
+  }
+
+  function makeHdrTarget(w, h) {
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, w, h, 0, gl.RGBA, gl.HALF_FLOAT, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (!ok) { gl.deleteTexture(tex); gl.deleteFramebuffer(fb); return null; }
+    return { tex, fbo: fb, w, h };
+  }
+
+  function freeHdrTargets() {
+    for (const t of [hdrScene, ...bloomLevels]) {
+      if (!t) continue;
+      gl.deleteTexture(t.tex);
+      gl.deleteFramebuffer(t.fbo);
+    }
+    hdrScene = null;
+    bloomLevels = [];
+  }
+
+  function destroyHdr() {
+    if (!gl) return;
+    freeHdrTargets();
+    for (const pr of [dsProg, usProg, cpProg]) if (pr) gl.deleteProgram(pr);
+    dsProg = usProg = cpProg = null;
+  }
+
+  // Scene target at the ray-tracing resolution plus a 5-level bloom chain starting at half of it
+  function ensureHdrTargets(w, h) {
+    w = Math.max(64, Math.round(w));
+    h = Math.max(48, Math.round(h));
+    if (hdrScene && hdrScene.w === w && hdrScene.h === h) return true;
+    freeHdrTargets();
+    hdrScene = makeHdrTarget(w, h);
+    if (!hdrScene) return false;
+    let lw = w, lh = h;
+    for (let i = 0; i < 5; i++) {
+      lw = Math.max(2, lw >> 1);
+      lh = Math.max(2, lh >> 1);
+      const t = makeHdrTarget(lw, lh);
+      if (!t) { freeHdrTargets(); return false; }
+      bloomLevels.push(t);
+    }
+    return true;
+  }
+
+  function drawPass(target, w, h) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+    gl.viewport(0, 0, w, h);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  // Bloom chain + cinematic composite onto the visible canvas
+  function postProcess(fullW, fullH) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVbo);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.useProgram(dsProg);
+    gl.uniform1i(dsLoc.uSrc, 2);
+    gl.uniform1f(dsLoc.uThreshold, 3.2);
+    let src = hdrScene;
+    bloomLevels.forEach((lvl, i) => {
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, src.tex);
+      gl.uniform2f(dsLoc.uTexel, 1 / src.w, 1 / src.h);
+      gl.uniform1f(dsLoc.uFirst, i === 0 ? 1 : 0);
+      drawPass(lvl.fbo, lvl.w, lvl.h);
+      src = lvl;
+    });
+    gl.useProgram(usProg);
+    gl.uniform1i(usLoc.uSrc, 2);
+    gl.uniform1f(usLoc.uRadius, 1.0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    for (let i = bloomLevels.length - 1; i > 0; i--) {
+      const from = bloomLevels[i], to = bloomLevels[i - 1];
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, from.tex);
+      gl.uniform2f(usLoc.uTexel, 1 / from.w, 1 / from.h);
+      drawPass(to.fbo, to.w, to.h);
+    }
+    gl.disable(gl.BLEND);
+    gl.useProgram(cpProg);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, hdrScene.tex);
+    gl.activeTexture(gl.TEXTURE4);
+    gl.bindTexture(gl.TEXTURE_2D, bloomLevels[0].tex);
+    gl.uniform1i(cpLoc.uScene, 3);
+    gl.uniform1i(cpLoc.uBloom, 4);
+    gl.uniform1f(cpLoc.uExposure, 0.32);
+    gl.uniform1f(cpLoc.uBloomStrength, state.cinematic ? 0.34 : 0.0);
+    gl.uniform1f(cpLoc.uTime, simTime);
+    gl.uniform1f(cpLoc.uCinematic, state.cinematic ? 1 : 0);
+    drawPass(null, fullW, fullH);
+  }
+
   function destroyWebGL(loseCtx = false) {
     if (!gl) return;
     try {
@@ -1635,6 +1790,7 @@ export function mountObservatory(host, opts = {}) {
       if (quadVbo) gl.deleteBuffer(quadVbo);
       if (rtProg) gl.deleteProgram(rtProg);
       if (prProg) gl.deleteProgram(prProg);
+      destroyHdr();
       if (loseCtx) gl.getExtension('WEBGL_lose_context')?.loseContext();
     } catch { }
     fboTex = null;
@@ -1670,7 +1826,10 @@ export function mountObservatory(host, opts = {}) {
       return false;
     }
 
-    rtProg = linkProgram(gl, isWebGL2 ? RAYTRACE_VERT_300 : RAYTRACE_VERT_100, isWebGL2 ? RAYTRACE_FRAG_300 : RAYTRACE_FRAG_100);
+    const canHdr = isWebGL2 && !!gl.getExtension('EXT_color_buffer_float');
+    const rtFrag = canHdr ? RAYTRACE_FRAG_300.replace('precision highp float;', 'precision highp float;\n#define HDR_OUT 1') : (isWebGL2 ? RAYTRACE_FRAG_300 : RAYTRACE_FRAG_100);
+    rtProg = linkProgram(gl, isWebGL2 ? RAYTRACE_VERT_300 : RAYTRACE_VERT_100, rtFrag);
+    hdr = canHdr;
     prProg = linkProgram(gl, isWebGL2 ? PRESENT_VERT_300 : PRESENT_VERT_100, isWebGL2 ? PRESENT_FRAG_300 : PRESENT_FRAG_100);
     if (!rtProg || !prProg) {
       destroyWebGL(false);
@@ -1683,10 +1842,11 @@ export function mountObservatory(host, opts = {}) {
       'uResolution', 'uCamPos', 'uCamRight', 'uCamUp', 'uCamFwd', 'uTanHalfFov', 'uAspect',
       'uSpin', 'uDiskInner', 'uDiskOuter', 'uTempScale', 'uDiskBrightness', 'uTime',
       'uShowDisk', 'uUseDoppler', 'uUseGravRedshift', 'uUseLensing', 'uMaxSteps', 'uStepScale',
-      'uShipBeta', 'uSkyGravBlue', 'uSkyTex', 'uHasSkyTex',
+      'uShipBeta', 'uSkyGravBlue', 'uSkyTex', 'uHasSkyTex', 'uJet', 'uHotSpot',
     ];
     rtLoc = {};
     for (const n of uNames) rtLoc[n] = gl.getUniformLocation(rtProg, n);
+    initHdr();
     prLoc = { uFrameTex: gl.getUniformLocation(prProg, 'uFrameTex') };
 
     // Tek tam-ekran üçgen (dörtgenden daha hızlı, köşegen ek yeri yok)
@@ -1864,7 +2024,8 @@ export function mountObservatory(host, opts = {}) {
     const fullH = glCanvas.height;
     const targetFbW = Math.max(64, Math.round(fullW * qParams.scale));
     const targetFbH = Math.max(48, Math.round(fullH * qParams.scale));
-    const useFbo = qParams.scale < 0.995 ? ensureFbo(targetFbW, targetFbH) : false;
+    const useHdr = hdr && ensureHdrTargets(targetFbW, targetFbH);
+    const useFbo = !useHdr && qParams.scale < 0.995 ? ensureFbo(targetFbW, targetFbH) : false;
 
     const basis = computeCameraBasis(state);
     const params = mapObservatoryParams(state);
@@ -1872,9 +2033,9 @@ export function mountObservatory(host, opts = {}) {
     const skyGravBlue = journey && journey.phase !== 'done' ? 1.0 : 0.0;
 
     // Geçiş 1: Ekran-dışı FBO (veya tam ölçekte doğrudan tuval) üzerine ışın izleme
-    gl.bindFramebuffer(gl.FRAMEBUFFER, useFbo ? fbo : null);
-    const drawW = useFbo ? fboW : fullW;
-    const drawH = useFbo ? fboH : fullH;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, useHdr ? hdrScene.fbo : useFbo ? fbo : null);
+    const drawW = useHdr ? hdrScene.w : useFbo ? fboW : fullW;
+    const drawH = useHdr ? hdrScene.h : useFbo ? fboH : fullH;
     gl.viewport(0, 0, drawW, drawH);
 
     gl.useProgram(rtProg);
@@ -1908,8 +2069,15 @@ export function mountObservatory(host, opts = {}) {
     gl.uniform1f(rtLoc.uSkyGravBlue, skyGravBlue);
     gl.uniform1i(rtLoc.uSkyTex, 0);
     gl.uniform1f(rtLoc.uHasSkyTex, hasSkyTex ? 1.0 : 0.0);
+    gl.uniform1f(rtLoc.uJet, params.jet);
+    gl.uniform1f(rtLoc.uHotSpot, params.hotSpot);
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    if (useHdr) {
+      postProcess(fullW, fullH);
+      return true;
+    }
 
     // Geçiş 2: FBO -> tam tuvale doğrusal filtreli büyütme
     if (useFbo) {
@@ -1944,8 +2112,11 @@ export function mountObservatory(host, opts = {}) {
   }
 
   // ---------- Tek rAF Döngüsü (createAnimLoop: asleep() ve mp-vis tam uyumlu) ----------
-  const loop = createAnimLoop((now, dt) => {
+  const loop = createAnimLoop((now, dtRaw) => {
     if (dead) return false;
+    // 60 fps cap: high-refresh screens (120/144 Hz) skip in-between frames; time steps span the drawn frames
+    if (prevFrameNow > 0 && now - prevFrameNow < 1000 / 60 - 1.2) return isAnimating();
+    const dt = prevFrameNow > 0 ? Math.min(0.05, (now - prevFrameNow) / 1000) : dtRaw;
 
     const rawFrameMs = prevFrameNow > 0 ? (now - prevFrameNow) : 16.7;
     prevFrameNow = now;
@@ -2039,6 +2210,7 @@ export function mountObservatory(host, opts = {}) {
       gravRedshift: p.gravRedshift,
       lensing: p.lensing,
       showOverlay: p.showOverlay,
+      jet: !!p.jet,
     });
     syncControlsUI();
     syncShipUI();
