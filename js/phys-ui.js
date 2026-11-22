@@ -97,8 +97,8 @@ export function createAnimLoop(tick, clean) {
   const step = now => {
     raf = 0;
     if (dead || !want || asleep()) return;
-    // 60 fps is plenty for these simulations: on 120/144 Hz screens skip the in-between frames
-    if (now - last < 1000 / 60 - 1.2) { raf = requestAnimationFrame(step); return; }
+    // 30 fps cap for these simulations: skip the in-between display frames
+    if (now - last < 1000 / 30 - 2) { raf = requestAnimationFrame(step); return; }
     const dt = Math.min(0.05, Math.max(0.001, (now - last) / 1000));
     last = now;
     const keep = tick(now, dt);

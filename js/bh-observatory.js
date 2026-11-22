@@ -644,9 +644,11 @@ export function computeObservatoryReadouts(state) {
  */
 export function createQualityController({ isMobile = false, mode = 'auto' } = {}) {
   let curMode = QUALITY_MODES[mode] ? mode : 'auto';
-  const targetMs = isMobile ? 27.5 : 17.5; // mobil ~36 fps, masaüstü ~57 fps
-  const upperMs = isMobile ? 33.0 : 21.5;  // eşik üstü (mobilde <30 fps, masaüstünde <46 fps) -> düşür
-  const lowerMs = isMobile ? 21.0 : 14.5;  // rahat boşluk -> yükselt
+  // Frames are capped at 30 fps (~33 ms apart), so the targets sit just above the cap: a GPU that keeps up
+  // shows ~33 ms and may raise quality; only frames clearly slower than the cap lower it.
+  const targetMs = isMobile ? 36.0 : 35.0;
+  const upperMs = isMobile ? 45.0 : 41.0;  // eşik üstü (mobilde <22 fps, masaüstünde <24 fps) -> düşür
+  const lowerMs = isMobile ? 35.0 : 34.8;  // 30 fps sınırına yetişiyor -> yükselt
   const minScale = 0.25;
   const maxScale = 1.0;
 
@@ -2114,8 +2116,8 @@ export function mountObservatory(host, opts = {}) {
   // ---------- Tek rAF Döngüsü (createAnimLoop: asleep() ve mp-vis tam uyumlu) ----------
   const loop = createAnimLoop((now, dtRaw) => {
     if (dead) return false;
-    // 60 fps cap: high-refresh screens (120/144 Hz) skip in-between frames; time steps span the drawn frames
-    if (prevFrameNow > 0 && now - prevFrameNow < 1000 / 60 - 1.2) return isAnimating();
+    // 30 fps cap: in-between display frames are skipped; time steps span the drawn frames
+    if (prevFrameNow > 0 && now - prevFrameNow < 1000 / 30 - 2) return isAnimating();
     const dt = prevFrameNow > 0 ? Math.min(0.05, (now - prevFrameNow) / 1000) : dtRaw;
 
     const rawFrameMs = prevFrameNow > 0 ? (now - prevFrameNow) : 16.7;
