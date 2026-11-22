@@ -271,6 +271,8 @@ function createWorld(id) {
   el.className = 'pl-world';
   el.dataset.p = id;
   el.innerHTML = `${planetBodyMarkup(id)}<div class="pl-ambient">${ambientMarkup(id)}</div>`;
+  // Kara Delik: ray-traced backdrop on top of the CSS layers (which stay as the fallback without WebGL)
+  if (id === 'karadelik') import('./bh-backdrop.js').then(m => m.mountBlackHoleBackdrop(el)).catch(err => console.warn('Kara delik arka planı açılamadı', err));
   return el;
 }
 

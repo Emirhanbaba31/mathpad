@@ -1860,3 +1860,22 @@ html[data-motion="off"] .pl-wave {
   .pl-world[data-p="karadelik"] .pl-planet-wrap { --sz: 92vw; bottom: -10vw; right: -30vw; }
   .pl-bh-spark { left: calc(100% - 16vw); top: calc(100% - 36vw); }
 }
+
+/* Kara Delik theme, ray-traced: the WebGL canvas spans well beyond the planet box so the disk's wings reach into the
+   page; its edges dissolve into the starfield. When it is running the CSS approximation and its sparks step aside. */
+.pl-bh-gl {
+  position: absolute; left: 50%; top: 50%; width: 210%; height: 132%; transform: translate(-50%, -50%);
+  pointer-events: none; image-rendering: auto; filter: saturate(1.35) contrast(1.06);
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 48%, rgba(0, 0, 0, .55) 72%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 48%, rgba(0, 0, 0, .55) 72%, transparent 100%);
+}
+.pl-world[data-p="karadelik"].bh-gl-on .pl-planet-wrap { --pl-op: .92; }
+.pl-world[data-p="karadelik"].bh-gl-on .pl-bh > :not(.pl-bh-gl),
+.pl-world[data-p="karadelik"].bh-gl-on .pl-bh-spark { display: none; }
+/* warm light spilling from the accretion disk onto the interface (static, no cost) */
+html[data-planet="karadelik"] .card { background-image: radial-gradient(130% 90% at 100% 100%, rgba(255, 150, 60, .07), transparent 62%); }
+html[data-planet="karadelik"] .side { background-image: linear-gradient(180deg, transparent 55%, rgba(255, 130, 40, .045)); }
+html[data-planet="karadelik"] .btn.primary { box-shadow: 0 0 0 1px rgba(255, 170, 90, .35), 0 6px 24px -8px rgba(255, 130, 40, .55); }
+@media (max-width: 820px) {
+  .pl-bh-gl { width: 230%; height: 150%; }
+}
